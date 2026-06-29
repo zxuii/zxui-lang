@@ -2,9 +2,13 @@ from enum import Enum, auto
 import sys
 
 class TokenType(Enum):
-    NUMBER   = auto() # 1..9
+    INT      = auto() # 1..9
     PLUS     = auto() # +
     MINUS    = auto() # -
+    ASTERISK = auto() # *
+    SLASH    = auto() # /
+    LPAREN   = auto() # (
+    RPAREN   = auto() # )
     EOF      = auto() # EOF
 
 class Token():
@@ -21,69 +25,85 @@ class Lexer():
         self.pos    = 0
         self.ch     = ''
         self.tokens = []
+        self.advance()
+
         
     def tokenize(self):
-        while not self.is_at_end(self.pos):
+        while self.ch != '':
             self.next_token()
 
         self.add_token(TokenType.EOF, "EOF")
         return self.tokens
 
     def next_token(self):
-        self.advance()
         self.skip_whitespace()
 
+        if self._is(''):
+            return
+
         # print(f"char saat ini = {self.ch}")
-        if self.ch == '+':
+        if self._is('+'):
             self.add_token(TokenType.PLUS, '+')
-        elif self.ch == '-':
+            self.advance()
+        elif self._is('-'):
             self.add_token(TokenType.MINUS, '-')
-        elif self.ch.isnumeric:
+            self.advance()
+        elif self._is('*'):
+            self.add_token(TokenType.ASTERISK, '*')
+            self.advance()
+        elif self._is('/'):
+            self.add_token(TokenType.SLASH, '/')
+            self.advance()
+        elif self._is('('):
+            self.add_token(TokenType.LPAREN, '(')
+            self.advance()
+        elif self._is(')'):
+            self.add_token(TokenType.RPAREN, ')')
+            self.advance()
+        elif self.is_int():
             self.parse_int()
         else:
-            print(f"Error: unknown characters '{self.ch}'", file=sys.stderr)
+            raise SyntaxError(f"Unknown characters '{self.ch}'")
 
     def skip_whitespace(self):
-        if self.ch == ' ' or self.ch == '\n' or self.ch == '\t' or self.ch == '\r':
+        while self.ch in [' ', '\n', '\t', '\r']:
             self.advance()
 
+    def peek(self):
+        if self.pos >= len(self.code):
+            return ''
+        return self.code[self.pos]
 
     def advance(self):
         # print(f"{len(self.code)}, {self.pos}")
-        self.ch = self.code[self.pos] if not self.is_at_end(self.pos) else ''
+        if self.pos >= len(self.code):
+            self.ch = ''
+        else:
+            self.ch = self.code[self.pos]
         self.pos += 1
+        # self.ch = self.code[self.pos] if not self.is_at_end(self.pos) else ''
+        # self.pos += 1
 
     def parse_int(self):
         num = ''
-
-        while self.ch.isnumeric():
-
+        while self.is_int():
             num += self.ch
             self.advance()
-            if self.ch == '.':
-                num += self.ch
-                self.advance()
             
-        self.add_token(TokenType.NUMBER, num)
-        
-    def peek(self):
-        if self.is_at_end(self.pos + 1):
-            return ''
-        
-        return self.code[self.pos + 1]
+        self.add_token(TokenType.INT, num)
+    
+    def _is(self, ch: str):
+        return self.ch == ch
 
+    def is_int(self):
+        return '0' <= self.ch <= '9'
+    
     def add_token(self, ty: TokenType, val: str):
         self.tokens.append(Token(ty, val))
 
-    def is_at_end(self, pos):
-        if pos >= len(self.code):
-            return True
-        else:
-            return False
-
         
 def main():
-    tokens = Lexer("122.123 + 123").tokenize()
+    tokens = Lexer("123 + (512 / 5)").tokenize()
     print(tokens)
 
 if __name__ == "__main__":
