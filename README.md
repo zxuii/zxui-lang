@@ -13,6 +13,7 @@ nanti, video tentang pembuatan ini akan di upload setelah semua proses ini seles
 ## TODOs
 
 - [x] simple lexer
+- [x] lexer proper untuk angka ( ) / * - * 
 - [ ] lexing keyword, identifier, dll
 - [ ] parser
 - [ ] ast
