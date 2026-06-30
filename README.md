@@ -21,4 +21,5 @@ Work cuy!
 - [x] ast
 - [x] simple parser untuk lexer sebelumnya
 - [x] basic interpreter untuk semua ini
-- [ ] lexing & parsing variable decl, fungsi decl, call dan hal yang diperlukan lainnya 
+- [x] lexing & parsing variable decl
+- [ ] lexing & fungsi decl, call dan hal yang diperlukan lainnya 

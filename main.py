@@ -2,19 +2,27 @@ from enum import Enum, auto
 from dataclasses import dataclass
 from pprint import pprint
 import sys
+import re
 
 # ------------ Tokens
 
 class TokenType(Enum):
-    NUMBER      = auto() # 1..9
-    PLUS     = auto() # +
-    MINUS    = auto() # -
-    ASTERISK = auto() # *
-    SLASH    = auto() # /
-    LPAREN   = auto() # (
-    RPAREN   = auto() # )
-    EOF      = auto() # EOF
-    PROGRAM  = auto() # PROGRAM
+    IDENTIFIER = auto() # IDENTIFIER
+    NUMBER     = auto() # NUMBER
+    
+    LET        = auto() # let
+    
+    PLUS       = auto() # +
+    MINUS      = auto() # -
+    ASTERISK   = auto() # *
+    SLASH      = auto() # /
+    
+    LPAREN     = auto() # (
+    RPAREN     = auto() # )
+    EQUAL      = auto() # =
+
+    EOF        = auto() # EOF
+    PROGRAM    = auto() # PROGRAM
 
 class Token():
     def __init__(self, ty: TokenType, val: str, line: int, col: int):
@@ -28,16 +36,19 @@ class Token():
     
 
 def tok_in_char(ty):
-    if   ty == TokenType.NUMBER:    return 'number'
-    elif ty == TokenType.PLUS:      return '+'
-    elif ty == TokenType.MINUS:     return '-'
-    elif ty == TokenType.ASTERISK:  return '*'
-    elif ty == TokenType.SLASH:     return '/'
-    elif ty == TokenType.LPAREN:    return '('
-    elif ty == TokenType.RPAREN:    return ')'
-    elif ty == TokenType.EOF:       return 'eof'
-    elif ty == TokenType.PROGRAM:   return 'program'
-    else:                           return f"unkown '{ty}'"
+    if   ty == TokenType.IDENTIFIER: return 'identifier' 
+    elif ty == TokenType.NUMBER:     return 'number'
+    elif ty == TokenType.LET:        return 'let'
+    elif ty == TokenType.PLUS:       return '+'
+    elif ty == TokenType.MINUS:      return '-'
+    elif ty == TokenType.ASTERISK:   return '*'
+    elif ty == TokenType.SLASH:      return '/'
+    elif ty == TokenType.LPAREN:     return '('
+    elif ty == TokenType.RPAREN:     return ')'
+    elif ty == TokenType.EQUAL:      return '='
+    elif ty == TokenType.EOF:        return 'eof'
+    elif ty == TokenType.PROGRAM:    return 'program'
+    else:                            return f"unkown '{ty}'"
 
 
 # ------------ Lexers
@@ -48,7 +59,7 @@ class Lexer():
         self.line   = 1
         self.col    = 0
         self.pos    = 0
-        self.ch     = ''
+        self.ch     = ''.isalpha
         self.tokens = []
         self.advance()
 
@@ -81,8 +92,15 @@ class Lexer():
             self.add_token_advance(TokenType.LPAREN, '(')
         elif self._is(')'):
             self.add_token_advance(TokenType.RPAREN, ')')
+        elif self._is('='):
+            self.add_token_advance(TokenType.EQUAL, '=')
         elif self.is_int(self.ch):
             self.parse_number()
+        elif self.is_key("let"):
+            self.add_token(TokenType.LET, 'let')
+        elif self.is_alpha():
+            self.add_token(TokenType.IDENTIFIER, self.get_ident())
+        
         else:
             raise SyntaxError(f"Unexpected characters '{self.ch}' at {self.line}:{self.col}")
 
@@ -132,7 +150,29 @@ class Lexer():
     
     def _is(self, ch: str):
         return self.ch == ch
+    
+    def is_key(self, keyword: str):
+        key = ''
+        for i in keyword:
+            if self.ch == i:
+                key += self.ch
+                self.advance()
+        return True if key == keyword else False                
 
+    def is_alpha(self):
+        return 'a' <= self.ch <= 'z' or 'A' <= self.ch <= 'Z' or self._is('_')
+
+    def is_alnum(self):
+        return self.is_alpha() or self.is_int(self.ch)
+
+    def get_ident(self):
+        ident = ''
+        while self.is_alnum():
+            ident += self.ch
+            self.advance()
+        return ident
+
+    
     def is_int(self, ch):
         return '0' <= ch <= '9'
     
@@ -161,6 +201,10 @@ class Program(Node):
     block: Node
 
 @dataclass
+class Block(Node):
+    stmts: list
+
+@dataclass
 class BinOp(Node):
     left: Node
     op: Token
@@ -178,6 +222,15 @@ class Number(Node):
     # @property
     # def val(self):
     #     return self.ty.val
+
+@dataclass
+class VarDecl(Node):
+    var_node: Node
+    val_node: Node
+
+@dataclass
+class Var(Node):
+    ty: Token
 
 # ------------ Parsers
 
@@ -225,7 +278,27 @@ class Parser:
             return Program(NoOp())
         
         # print(self.ct)
-        return Program(self.parse_expr())
+        return Program(self.parse_block())
+    
+    def parse_block(self):
+        # print(self.ct)
+        stmts = [self.parse_stmt()]
+        return Block(stmts)
+    
+    def parse_stmt(self):
+        # print(self.ct)
+        if self.ct.ty == TokenType.LET:
+            return self.parse_var_decl()
+        else:
+            return self.parse_expr()
+    
+    def parse_var_decl(self):
+        self.consume(TokenType.LET)
+        var_node = Var(self.ct)
+        self.consume(TokenType.IDENTIFIER)
+        self.consume(TokenType.EQUAL)
+        var_decl = VarDecl(var_node, self.parse_expr())
+        return var_decl
 
     def parse_expr(self):
         node = self.parse_term()
@@ -357,13 +430,15 @@ class Interpreter:
 # ------------ Mains
 
 def main():
-    try:
-        tokens = Lexer("6 / 0.5").tokenize()
+    # try:
+        tokens = Lexer("let tes123 = -5").tokenize()
         ast    = Parser(tokens).parse()
-        result = Interpreter().interpret(ast)
-        print(result)
-    except (SyntaxError, ParseError, InterpreterError) as e:
-        print(f"{e}", file=sys.stderr)
+        # result = Interpreter().interpret(ast)
+        print(tokens)
+        pprint(ast)
+        # print(result)
+    # except (SyntaxError, ParseError, InterpreterError) as e:
+    #     print(f"{e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
