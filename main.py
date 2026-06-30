@@ -1,6 +1,8 @@
 from enum import Enum, auto
 import sys
 
+# ------------ Tokens
+
 class TokenType(Enum):
     INT      = auto() # 1..9
     PLUS     = auto() # +
@@ -19,6 +21,8 @@ class Token():
     def __repr__(self):
         return f"{self.val}"
 
+# ------------ Lexers
+
 class Lexer():
     def __init__(self, code: str):
         self.code   = code
@@ -29,7 +33,7 @@ class Lexer():
 
         
     def tokenize(self):
-        while self.ch != '':
+        while not self.is_empty():
             self.next_token()
 
         self.add_token(TokenType.EOF, "EOF")
@@ -38,28 +42,22 @@ class Lexer():
     def next_token(self):
         self.skip_whitespace()
 
-        if self._is(''):
+        if self.is_empty():
             return
 
         # print(f"char saat ini = {self.ch}")
         if self._is('+'):
-            self.add_token(TokenType.PLUS, '+')
-            self.advance()
+            self.add_token_advance(TokenType.PLUS, '+')
         elif self._is('-'):
-            self.add_token(TokenType.MINUS, '-')
-            self.advance()
+            self.add_token_advance(TokenType.MINUS, '-')
         elif self._is('*'):
-            self.add_token(TokenType.ASTERISK, '*')
-            self.advance()
+            self.add_token_advance(TokenType.ASTERISK, '*')
         elif self._is('/'):
-            self.add_token(TokenType.SLASH, '/')
-            self.advance()
+            self.add_token_advance(TokenType.SLASH, '/')
         elif self._is('('):
-            self.add_token(TokenType.LPAREN, '(')
-            self.advance()
+            self.add_token_advance(TokenType.LPAREN, '(')
         elif self._is(')'):
-            self.add_token(TokenType.RPAREN, ')')
-            self.advance()
+            self.add_token_advance(TokenType.RPAREN, ')')
         elif self.is_int():
             self.parse_int()
         else:
@@ -101,7 +99,17 @@ class Lexer():
     def add_token(self, ty: TokenType, val: str):
         self.tokens.append(Token(ty, val))
 
-        
+    def add_token_advance(self, ty: TokenType, val: str):
+        self.add_token(ty, val)
+        self.advance()
+
+    def is_empty(self):
+        return self._is('')
+
+# ------------ ASTs
+
+
+
 def main():
     tokens = Lexer("123 + (512 / 5)").tokenize()
     print(tokens)
