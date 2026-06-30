@@ -152,6 +152,10 @@ class Node:
     pass
 
 @dataclass
+class NoOp(Node):
+    pass
+
+@dataclass
 class Program(Node):
     block: Node
 
@@ -194,8 +198,7 @@ class Parser:
         if not self.is_at_end():
             self.ct = self.tokens[self.pos]
             self.pos += 1
-        else:
-            self.ct = self.ct
+
     def consume(self, ty):
         if self.ct and self.ct.ty == ty:
             self.advance()
@@ -215,13 +218,18 @@ class Parser:
         raise ParseError(f"Unexpected token '{self.ct.val}'. expected '{expect_str}' at {self.ct.line}:{self.ct.col}")
     def parse_program(self):
         self.consume(TokenType.PROGRAM)
+
+        # woops, ternyata di sini tempat yang lebih baik
+        if self.ct.ty == TokenType.EOF:
+            return Program(NoOp())
+        
         # print(self.ct)
         return Program(self.parse_expr())
 
     def parse_expr(self):
         node = self.parse_term()
 
-        while self.ct and self.ct.ty in [TokenType.PLUS, TokenType.MINUS]:
+        while self.ct.ty in [TokenType.PLUS, TokenType.MINUS]:
             tok = self.ct
             if tok.ty == TokenType.PLUS:
                 self.consume(TokenType.PLUS)
@@ -238,7 +246,7 @@ class Parser:
         # print(node)
 
 
-        while self.ct and self.ct.ty in [TokenType.ASTERISK, TokenType.SLASH]:
+        while self.ct.ty in [TokenType.ASTERISK, TokenType.SLASH]:
             tok = self.ct
             if tok.ty == TokenType.ASTERISK:
                 self.consume(TokenType.ASTERISK)
@@ -257,6 +265,11 @@ class Parser:
 
         tok = self.ct
         # print(tok)
+        
+        # handle kasus spesial kalau ada file kosong (hanya berisi PROGRAM dan EOF)
+        # if self.tokens[0].ty == TokenType.PROGRAM and self.tokens[1].ty == TokenType.EOF:
+        #     return Program(Node)
+
         if tok.ty == TokenType.PLUS:
             self.consume(TokenType.PLUS)
             # print("PLUS")
@@ -301,11 +314,14 @@ class Interpreter:
     def generic_visit(self, node):
         raise InterpreterError(f"No visit_{type(node).__name__} method")
     
-    def interpret(self, program: Program):
-        return self.visit(program)
+    def interpret(self, node: Program):
+        return self.visit(node)
 
     def visit_Program(self, node: Program):
         return self.visit(node.block)
+    
+    def visit_NoOp(self, node: NoOp):
+        return None
 
     def visit_BinOp(self, node: BinOp):
         left  = self.visit(node.left)
@@ -340,7 +356,7 @@ class Interpreter:
 # ------------ Mains
 
 def main():
-    tokens = Lexer("-5.233 + (10 / 2) * 5").tokenize()
+    tokens = Lexer("").tokenize()
     ast    = Parser(tokens).parse()
     # pprint(tokens)
     # pprint(ast)
