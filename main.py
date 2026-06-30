@@ -17,6 +17,7 @@ class TokenType(Enum):
     ASTERISK   = auto() # *
     SLASH      = auto() # /
     
+    SEMICOLON  = auto() # ;
     LPAREN     = auto() # (
     RPAREN     = auto() # )
     EQUAL      = auto() # =
@@ -43,6 +44,7 @@ def tok_in_char(ty):
     elif ty == TokenType.MINUS:      return '-'
     elif ty == TokenType.ASTERISK:   return '*'
     elif ty == TokenType.SLASH:      return '/'
+    elif ty == TokenType.SEMICOLON:   return ';'
     elif ty == TokenType.LPAREN:     return '('
     elif ty == TokenType.RPAREN:     return ')'
     elif ty == TokenType.EQUAL:      return '='
@@ -88,6 +90,8 @@ class Lexer():
             self.add_token_advance(TokenType.ASTERISK, '*')
         elif self._is('/'):
             self.add_token_advance(TokenType.SLASH, '/')
+        elif self._is(';'):
+            self.add_token_advance(TokenType.SEMICOLON, ';')
         elif self._is('('):
             self.add_token_advance(TokenType.LPAREN, '(')
         elif self._is(')'):
@@ -283,7 +287,16 @@ class Parser:
     def parse_block(self):
         # print(self.ct)
         stmts = [self.parse_stmt()]
+        while self.ct.ty == TokenType.SEMICOLON:
+            self.consume(TokenType.SEMICOLON)
+            if not self.starts_stmt():
+                break
+            stmts.append(self.parse_stmt())
+
         return Block(stmts)
+    
+    def starts_stmt(self):
+        return self.ct.ty in [TokenType.LET, TokenType.PLUS, TokenType.MINUS, TokenType.LPAREN, TokenType.NUMBER] 
     
     def parse_stmt(self):
         # print(self.ct)
@@ -431,10 +444,10 @@ class Interpreter:
 
 def main():
     # try:
-        tokens = Lexer("let tes123 = -5").tokenize()
+        tokens = Lexer("let x = 5; let y = 2; let z = 3;").tokenize()
         ast    = Parser(tokens).parse()
         # result = Interpreter().interpret(ast)
-        print(tokens)
+        # print(tokens)
         pprint(ast)
         # print(result)
     # except (SyntaxError, ParseError, InterpreterError) as e:
