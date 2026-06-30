@@ -12,7 +12,18 @@ https://craftinginterpreters.com/the-lox-language.html#top
 
 nanti, video tentang pembuatan ini akan di upload setelah semua proses ini selesai di channel youtube @TelurTerbulat
 
+saat ini jika dijalankan `python main.py`:
 
+```rust
+[TokenType.PROGRAM(PROGRAM),
+ TokenType.INT(1),
+ TokenType.PLUS(+),
+ TokenType.INT(1),
+ TokenType.EOF(EOF)]
+Program(block=BinOp(left=Int(ty=TokenType.INT(1)),
+                    op=TokenType.PLUS(+),
+                    right=Int(ty=TokenType.INT(1))))
+```
 
 ## TODOs
 
