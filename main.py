@@ -351,12 +351,13 @@ class Interpreter:
             raise InterpreterError(f"Unkown unary operator '{node.op.val}' at {node.op.line}:{node.op.col}")
         
     def visit_Number(self, node: Number):
-        return float(node.ty.val)
+        val = float(node.ty.val)
+        return int(node.ty.val) if val.is_integer() else val
 
 # ------------ Mains
 
 def main():
-    tokens = Lexer("").tokenize()
+    tokens = Lexer("4").tokenize()
     ast    = Parser(tokens).parse()
     # pprint(tokens)
     # pprint(ast)
