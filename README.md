@@ -15,27 +15,10 @@ nanti, video tentang pembuatan ini akan di upload setelah semua proses ini seles
 saat ini jika dijalankan `python main.py`:
 
 ```rust
-[TokenType.PROGRAM(PROGRAM),
- TokenType.MINUS(-),
- TokenType.INT(5),
- TokenType.PLUS(+),
- TokenType.LPAREN((),
- TokenType.INT(10),
- TokenType.SLASH(/),
- TokenType.INT(2),
- TokenType.RPAREN()),
- TokenType.ASTERISK(*),
- TokenType.INT(4),
- TokenType.EOF(EOF)]
-Program(block=BinOp(left=UnaryOp(op=TokenType.MINUS(-),
-                                 expr=Int(ty=TokenType.INT(5))),
-                    op=TokenType.PLUS(+),
-                    right=BinOp(left=BinOp(left=Int(ty=TokenType.INT(10)),
-                                           op=TokenType.SLASH(/),
-                                           right=Int(ty=TokenType.INT(2))),
-                                op=TokenType.ASTERISK(*),
-                                right=Int(ty=TokenType.INT(4)))))
+19.767
 ```
+
+Work cuy!
 
 ## TODOs
 
@@ -43,7 +26,7 @@ Program(block=BinOp(left=UnaryOp(op=TokenType.MINUS(-),
 - [x] lexer proper untuk angka ( ) / * - * 
 - [x] ast
 - [x] simple parser untuk lexer sebelumnya
-- [-] basic interpreter untuk semua ini
+- [x] basic interpreter untuk semua ini
 - [ ] lexing keyword, identifier, dll
 - [ ] parser
 - [ ] interpreter

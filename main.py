@@ -5,7 +5,7 @@ from pprint import pprint
 # ------------ Tokens
 
 class TokenType(Enum):
-    INT      = auto() # 1..9
+    NUMBER      = auto() # 1..9
     PLUS     = auto() # +
     MINUS    = auto() # -
     ASTERISK = auto() # *
@@ -27,16 +27,16 @@ class Token():
     
 
 def tok_in_char(ty):
-    if ty == TokenType.INT: return '0..9'
-    elif ty == TokenType.PLUS: return '+'
-    elif ty == TokenType.MINUS: return '-'
-    elif ty == TokenType.ASTERISK: return '*'
-    elif ty == TokenType.SLASH: return '/'
-    elif ty == TokenType.LPAREN: return '('
-    elif ty == TokenType.RPAREN: return ')'
-    elif ty == TokenType.EOF: return 'eof'
-    elif ty == TokenType.PROGRAM: return 'program'
-    else: return f"unkown '{ty}'"
+    if   ty == TokenType.NUMBER:    return 'number'
+    elif ty == TokenType.PLUS:      return '+'
+    elif ty == TokenType.MINUS:     return '-'
+    elif ty == TokenType.ASTERISK:  return '*'
+    elif ty == TokenType.SLASH:     return '/'
+    elif ty == TokenType.LPAREN:    return '('
+    elif ty == TokenType.RPAREN:    return ')'
+    elif ty == TokenType.EOF:       return 'eof'
+    elif ty == TokenType.PROGRAM:   return 'program'
+    else:                           return f"unkown '{ty}'"
 
 
 # ------------ Lexers
@@ -80,10 +80,10 @@ class Lexer():
             self.add_token_advance(TokenType.LPAREN, '(')
         elif self._is(')'):
             self.add_token_advance(TokenType.RPAREN, ')')
-        elif self.is_int():
-            self.parse_int()
+        elif self.is_int(self.ch):
+            self.parse_number()
         else:
-            raise SyntaxError(f"Unknown characters '{self.ch}' at {self.line}:{self.col}")
+            raise SyntaxError(f"Unexpected characters '{self.ch}' at {self.line}:{self.col}")
 
     def skip_whitespace(self):
         while self.ch in [' ', '\n', '\t', '\r']:
@@ -110,19 +110,30 @@ class Lexer():
         # self.ch = self.code[self.pos] if not self.is_at_end(self.pos) else ''
         # self.pos += 1
 
-    def parse_int(self):
+    def parse_number(self):
         num = ''
-        while self.is_int():
+        while self.is_int(self.ch):
+            # if self.peek() == '.' and '.' not in num:
+            #     num += self.ch
+            #     self.advance()
             num += self.ch
             self.advance()
+
+        if self._is('.') and self.is_int(self.peek()):
+            num += self.ch
+            self.advance()
+            while self.is_int(self.ch):
+                num += self.ch
+                self.advance()
+
             
-        self.add_token(TokenType.INT, num)
+        self.add_token(TokenType.NUMBER, num)
     
     def _is(self, ch: str):
         return self.ch == ch
 
-    def is_int(self):
-        return '0' <= self.ch <= '9'
+    def is_int(self, ch):
+        return '0' <= ch <= '9'
     
     def add_token(self, ty: TokenType, val: str):
         self.tokens.append(Token(ty, val, self.line, self.col))
@@ -156,7 +167,7 @@ class UnaryOp(Node):
     expr: Node
 
 @dataclass
-class Int(Node):
+class Number(Node):
     ty: Token
 
     # @property
@@ -240,7 +251,7 @@ class Parser:
     def parse_factor(self):
         """factor : PLUS factor
                   | MINUS factor
-                  | INT
+                  | NUMBER
                   | LPAREN expr RPAREN
         """
 
@@ -255,17 +266,17 @@ class Parser:
             self.consume(TokenType.MINUS)
             node = UnaryOp(tok, self.parse_factor())
             return node
-        elif tok.ty == TokenType.INT:
-            # print("INT")
-            self.consume(TokenType.INT)
-            return Int(tok)
+        elif tok.ty == TokenType.NUMBER:
+            # print("NUMBER")
+            self.consume(TokenType.NUMBER)
+            return Number(tok)
         elif tok.ty == TokenType.LPAREN:
             self.consume(TokenType.LPAREN)
             node = self.parse_expr()
             self.consume(TokenType.RPAREN)
             return node
         else:
-            self.error([TokenType.PLUS, TokenType.MINUS, TokenType.INT, TokenType.LPAREN])
+            self.error([TokenType.PLUS, TokenType.MINUS, TokenType.NUMBER, TokenType.LPAREN])
     def parse(self):
         node = self.parse_program()
         # print(node)
@@ -276,13 +287,65 @@ class Parser:
     def is_at_end(self):
         return self.ct is not None and self.ct.ty == TokenType.EOF
 
+# ------------ Interpeter
+
+class InterpreterError(Exception):
+    pass
+
+class Interpreter:
+    def visit(self, node):
+        method_name = f"visit_{type(node).__name__}"
+        method      = getattr(self, method_name, self.generic_visit)
+        return method(node)
+    
+    def generic_visit(self, node):
+        raise InterpreterError(f"No visit_{type(node).__name__} method")
+    
+    def interpret(self, program: Program):
+        return self.visit(program)
+
+    def visit_Program(self, node: Program):
+        return self.visit(node.block)
+
+    def visit_BinOp(self, node: BinOp):
+        left  = self.visit(node.left)
+        right = self.visit(node.right)
+
+        if node.op.ty == TokenType.PLUS:
+            return left + right
+        elif node.op.ty == TokenType.MINUS:
+            return left - right
+        elif node.op.ty == TokenType.ASTERISK:
+            return left * right
+        elif node.op.ty == TokenType.SLASH:
+            if right == 0.0:
+                raise InterpreterError(f"Division by zero at {node.op.line}:{node.op.col}")
+            return left / right
+        else:
+            raise InterpreterError(f"Unkown binary operator '{node.op.val}' at {node.op.line}:{node.op.col}")
+
+    def visit_UnaryOp(self, node: UnaryOp):
+        val = self.visit(node.expr)
+
+        if node.op.ty == TokenType.PLUS:
+            return +val
+        elif node.op.ty == TokenType.MINUS:
+            return -val
+        else:
+            raise InterpreterError(f"Unkown unary operator '{node.op.val}' at {node.op.line}:{node.op.col}")
+        
+    def visit_Number(self, node: Number):
+        return float(node.ty.val)
+
 # ------------ Mains
 
 def main():
-    tokens = Lexer("-5 + (10 / 2) * 5").tokenize()
+    tokens = Lexer("-5.233 + (10 / 2) * 5").tokenize()
     ast    = Parser(tokens).parse()
-    pprint(tokens)
-    pprint(ast)
+    # pprint(tokens)
+    # pprint(ast)
+    result = Interpreter().interpret(ast)
+    print(result)
 
 if __name__ == "__main__":
     main()
