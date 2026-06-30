@@ -43,7 +43,7 @@ Program(block=BinOp(left=UnaryOp(op=TokenType.MINUS(-),
 - [x] lexer proper untuk angka ( ) / * - * 
 - [x] ast
 - [x] simple parser untuk lexer sebelumnya
-- [x] basic interpreter untuk semua ini
+- [-] basic interpreter untuk semua ini
 - [ ] lexing keyword, identifier, dll
 - [ ] parser
 - [ ] interpreter
