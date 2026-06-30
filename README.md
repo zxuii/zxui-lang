@@ -12,12 +12,6 @@ https://craftinginterpreters.com/the-lox-language.html#top
 
 nanti, video tentang pembuatan ini akan di upload setelah semua proses ini selesai di channel youtube @TelurTerbulat
 
-saat ini jika dijalankan `python main.py`:
-
-```rust
-19.767
-```
-
 Work cuy!
 
 ## TODOs
@@ -27,6 +21,4 @@ Work cuy!
 - [x] ast
 - [x] simple parser untuk lexer sebelumnya
 - [x] basic interpreter untuk semua ini
-- [ ] lexing keyword, identifier, dll
-- [ ] parser
-- [ ] interpreter
+- [ ] lexing & parsing variable decl, fungsi decl, call dan hal yang diperlukan lainnya 

@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from dataclasses import dataclass
 from pprint import pprint
+import sys
 
 # ------------ Tokens
 
@@ -351,18 +352,19 @@ class Interpreter:
             raise InterpreterError(f"Unkown unary operator '{node.op.val}' at {node.op.line}:{node.op.col}")
         
     def visit_Number(self, node: Number):
-        val = float(node.ty.val)
-        return int(node.ty.val) if val.is_integer() else val
+        return float(node.ty.val)
 
 # ------------ Mains
 
 def main():
-    tokens = Lexer("4").tokenize()
-    ast    = Parser(tokens).parse()
-    # pprint(tokens)
-    # pprint(ast)
-    result = Interpreter().interpret(ast)
-    print(result)
+    try:
+        tokens = Lexer("6 / 0.5").tokenize()
+        ast    = Parser(tokens).parse()
+        result = Interpreter().interpret(ast)
+        print(result)
+    except (SyntaxError, ParseError, InterpreterError) as e:
+        print(f"{e}", file=sys.stderr)
+
 
 if __name__ == "__main__":
     main()
