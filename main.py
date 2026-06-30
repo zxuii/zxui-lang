@@ -16,18 +16,36 @@ class TokenType(Enum):
     PROGRAM  = auto() # PROGRAM
 
 class Token():
-    def __init__(self, ty: TokenType, val: str):
-        self.ty  = ty
-        self.val = val
+    def __init__(self, ty: TokenType, val: str, line: int, col: int):
+        self.ty   = ty
+        self.val  = val
+        self.line = line
+        self.col  = col
 
     def __repr__(self):
         return f"{self.ty}({self.val})"
+    
+
+def tok_in_char(ty):
+    if ty == TokenType.INT: return '0..9'
+    elif ty == TokenType.PLUS: return '+'
+    elif ty == TokenType.MINUS: return '-'
+    elif ty == TokenType.ASTERISK: return '*'
+    elif ty == TokenType.SLASH: return '/'
+    elif ty == TokenType.LPAREN: return '('
+    elif ty == TokenType.RPAREN: return ')'
+    elif ty == TokenType.EOF: return 'eof'
+    elif ty == TokenType.PROGRAM: return 'program'
+    else: return f"unkown '{ty}'"
+
 
 # ------------ Lexers
 
 class Lexer():
     def __init__(self, code: str):
         self.code   = code
+        self.line   = 1
+        self.col    = 0
         self.pos    = 0
         self.ch     = ''
         self.tokens = []
@@ -65,7 +83,7 @@ class Lexer():
         elif self.is_int():
             self.parse_int()
         else:
-            raise SyntaxError(f"Unknown characters '{self.ch}'")
+            raise SyntaxError(f"Unknown characters '{self.ch}' at {self.line}:{self.col}")
 
     def skip_whitespace(self):
         while self.ch in [' ', '\n', '\t', '\r']:
@@ -78,6 +96,12 @@ class Lexer():
 
     def advance(self):
         # print(f"{len(self.code)}, {self.pos}")
+        if self.ch == '\n':
+            self.line += 1
+            self.col   = 1
+        else:
+            self.col += 1
+            
         if self.pos >= len(self.code):
             self.ch = ''
         else:
@@ -101,7 +125,7 @@ class Lexer():
         return '0' <= self.ch <= '9'
     
     def add_token(self, ty: TokenType, val: str):
-        self.tokens.append(Token(ty, val))
+        self.tokens.append(Token(ty, val, self.line, self.col))
 
     def add_token_advance(self, ty: TokenType, val: str):
         self.add_token(ty, val)
@@ -160,16 +184,24 @@ class Parser:
             self.ct = self.tokens[self.pos]
             self.pos += 1
         else:
-            self.ct = None
+            self.ct = self.ct
     def consume(self, ty):
         if self.ct and self.ct.ty == ty:
             self.advance()
         else:
-            self.error()
+            self.error(ty)
 
-    def error(self):
-        raise ParseError(f"Unexpected token: '{self.ct}")
-
+    def error(self, expect=None):
+        if not expect:
+            expect_str = "unknown"
+        elif isinstance(expect, list):
+            expect_str = "' or '".join(tok_in_char(e) for e in expect)
+        else:
+            expect_str = tok_in_char(expect)
+        
+        if self.ct is None or self.ct.ty == TokenType.EOF:
+            raise ParseError(f"Unexpected End of File. expected '{expect_str}' at {self.ct.line}:{self.ct.col}")
+        raise ParseError(f"Unexpected token '{self.ct.val}'. expected '{expect_str}' at {self.ct.line}:{self.ct.col}")
     def parse_program(self):
         self.consume(TokenType.PROGRAM)
         # print(self.ct)
@@ -233,7 +265,7 @@ class Parser:
             self.consume(TokenType.RPAREN)
             return node
         else:
-            self.error()
+            self.error([TokenType.PLUS, TokenType.MINUS, TokenType.INT, TokenType.LPAREN])
     def parse(self):
         node = self.parse_program()
         # print(node)
@@ -242,10 +274,12 @@ class Parser:
         return node
 
     def is_at_end(self):
-        return self.tokens[self.pos].ty == TokenType.EOF
+        return self.ct is not None and self.ct.ty == TokenType.EOF
+
+# ------------ Mains
 
 def main():
-    tokens = Lexer("-5 + (10 / 2) * 4").tokenize()
+    tokens = Lexer("-5 + (10 / 2) * 5").tokenize()
     ast    = Parser(tokens).parse()
     pprint(tokens)
     pprint(ast)
