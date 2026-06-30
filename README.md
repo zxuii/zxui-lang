@@ -16,13 +16,23 @@ saat ini jika dijalankan `python main.py`:
 
 ```rust
 [TokenType.PROGRAM(PROGRAM),
- TokenType.INT(1),
+ TokenType.INT(5),
  TokenType.PLUS(+),
- TokenType.INT(1),
+ TokenType.LPAREN((),
+ TokenType.INT(10),
+ TokenType.SLASH(/),
+ TokenType.INT(2),
+ TokenType.RPAREN()),
+ TokenType.ASTERISK(*),
+ TokenType.INT(4),
  TokenType.EOF(EOF)]
-Program(block=BinOp(left=Int(ty=TokenType.INT(1)),
+Program(block=BinOp(left=Int(ty=TokenType.INT(5)),
                     op=TokenType.PLUS(+),
-                    right=Int(ty=TokenType.INT(1))))
+                    right=BinOp(left=BinOp(left=Int(ty=TokenType.INT(10)),
+                                           op=TokenType.SLASH(/),
+                                           right=Int(ty=TokenType.INT(2))),
+                                op=TokenType.ASTERISK(*),
+                                right=Int(ty=TokenType.INT(4)))))
 ```
 
 ## TODOs
