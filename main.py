@@ -245,7 +245,7 @@ class Parser:
         return self.tokens[self.pos].ty == TokenType.EOF
 
 def main():
-    tokens = Lexer("5 + (10 / 2) * 4").tokenize()
+    tokens = Lexer("-5 + (10 / 2) * 4").tokenize()
     ast    = Parser(tokens).parse()
     pprint(tokens)
     pprint(ast)

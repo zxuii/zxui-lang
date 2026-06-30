@@ -16,6 +16,7 @@ saat ini jika dijalankan `python main.py`:
 
 ```rust
 [TokenType.PROGRAM(PROGRAM),
+ TokenType.MINUS(-),
  TokenType.INT(5),
  TokenType.PLUS(+),
  TokenType.LPAREN((),
@@ -26,7 +27,8 @@ saat ini jika dijalankan `python main.py`:
  TokenType.ASTERISK(*),
  TokenType.INT(4),
  TokenType.EOF(EOF)]
-Program(block=BinOp(left=Int(ty=TokenType.INT(5)),
+Program(block=BinOp(left=UnaryOp(op=TokenType.MINUS(-),
+                                 expr=Int(ty=TokenType.INT(5))),
                     op=TokenType.PLUS(+),
                     right=BinOp(left=BinOp(left=Int(ty=TokenType.INT(10)),
                                            op=TokenType.SLASH(/),
@@ -41,6 +43,7 @@ Program(block=BinOp(left=Int(ty=TokenType.INT(5)),
 - [x] lexer proper untuk angka ( ) / * - * 
 - [x] ast
 - [x] simple parser untuk lexer sebelumnya
+- [x] basic interpreter untuk semua ini
 - [ ] lexing keyword, identifier, dll
 - [ ] parser
 - [ ] interpreter
