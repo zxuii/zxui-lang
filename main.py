@@ -1,5 +1,6 @@
 from enum import Enum, auto
-import sys
+from dataclasses import dataclass
+from pprint import pprint
 
 # ------------ Tokens
 
@@ -12,6 +13,7 @@ class TokenType(Enum):
     LPAREN   = auto() # (
     RPAREN   = auto() # )
     EOF      = auto() # EOF
+    PROGRAM  = auto() # PROGRAM
 
 class Token():
     def __init__(self, ty: TokenType, val: str):
@@ -19,7 +21,7 @@ class Token():
         self.val = val
 
     def __repr__(self):
-        return f"{self.val}"
+        return f"{self.ty}({self.val})"
 
 # ------------ Lexers
 
@@ -33,6 +35,8 @@ class Lexer():
 
         
     def tokenize(self):
+        self.add_token(TokenType.PROGRAM, "PROGRAM")
+
         while not self.is_empty():
             self.next_token()
 
@@ -108,11 +112,143 @@ class Lexer():
 
 # ------------ ASTs
 
+@dataclass
+class Node:
+    pass
 
+@dataclass
+class Program(Node):
+    block: Node
+
+@dataclass
+class BinOp(Node):
+    left: Node
+    op: Token
+    right: Node
+
+@dataclass
+class UnaryOp(Node):
+    op: Token
+    expr: Node
+
+@dataclass
+class Int(Node):
+    ty: Token
+
+    # @property
+    # def val(self):
+    #     return self.ty.val
+
+# ------------ Parsers
+
+class ParseError(Exception):
+    pass
+
+class Parser:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.pos    = 0
+        self.ct     = None
+        self.advance()
+
+        # self.advance(TokenType.PROGRAM)
+        
+        # print(self.ct)
+
+    def advance(self):
+        if not self.is_at_end():
+            self.ct = self.tokens[self.pos]
+            self.pos += 1
+        else:
+            self.ct = None
+    def consume(self, ty):
+        if self.ct and self.ct.ty == ty:
+            self.advance()
+        else:
+            self.error()
+
+    def error(self):
+        raise ParseError(f"Unexpected token: '{self.ct}")
+
+    def parse_program(self):
+        self.consume(TokenType.PROGRAM)
+        # print(self.ct)
+        return Program(self.parse_expr())
+
+    def parse_expr(self):
+        node = self.parse_term()
+
+        while self.ct and self.ct.ty in [TokenType.PLUS, TokenType.MINUS]:
+            tok = self.ct
+            if tok.ty == TokenType.PLUS:
+                self.consume(TokenType.PLUS)
+            elif tok.ty == TokenType.MINUS:
+                self.consume(TokenType.MINUS)
+
+            node = BinOp(node, tok, self.parse_term())
+        return node
+
+    def parse_term(self):
+        """term : ((ASTERISK | SLASH) factor)*
+        """
+        node = self.parse_factor()
+        # print(node)
+
+
+        while self.ct and self.ct.ty in [TokenType.ASTERISK, TokenType.SLASH]:
+            tok = self.ct
+            if tok.ty == TokenType.ASTERISK:
+                self.consume(TokenType.ASTERISK)
+            elif tok.ty == TokenType.SLASH:
+                self.consume(TokenType.SLASH)
+
+            node = BinOp(node, tok, self.parse_factor())
+        return node
+
+    def parse_factor(self):
+        """factor : PLUS factor
+                  | MINUS factor
+                  | INT
+                  | LPAREN expr RPAREN
+        """
+
+        tok = self.ct
+        # print(tok)
+        if tok.ty == TokenType.PLUS:
+            self.consume(TokenType.PLUS)
+            # print("PLUS")
+            node = UnaryOp(tok, self.parse_factor())
+            return node
+        elif tok.ty == TokenType.MINUS:
+            self.consume(TokenType.MINUS)
+            node = UnaryOp(tok, self.parse_factor())
+            return node
+        elif tok.ty == TokenType.INT:
+            # print("INT")
+            self.consume(TokenType.INT)
+            return Int(tok)
+        elif tok.ty == TokenType.LPAREN:
+            self.consume(TokenType.LPAREN)
+            node = self.parse_expr()
+            self.consume(TokenType.RPAREN)
+            return node
+        else:
+            self.error()
+    def parse(self):
+        node = self.parse_program()
+        # print(node)
+        # if not self.is_at_end():
+        #     assert True, "unreachable"
+        return node
+
+    def is_at_end(self):
+        return self.tokens[self.pos].ty == TokenType.EOF
 
 def main():
-    tokens = Lexer("123 + (512 / 5)").tokenize()
-    print(tokens)
+    tokens = Lexer("1+1").tokenize()
+    ast    = Parser(tokens).parse()
+    pprint(tokens)
+    pprint(ast)
 
 if __name__ == "__main__":
     main()
