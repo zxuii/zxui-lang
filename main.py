@@ -34,7 +34,10 @@ class Token():
 
     def __repr__(self):
         return f"{self.ty}({self.val})"
-    
+        
+KEYWORDS = {
+    "let": TokenType.LET
+}
 
 def tok_in_char(ty):
     if   ty == TokenType.IDENTIFIER: return 'identifier' 
@@ -61,7 +64,7 @@ class Lexer():
         self.line   = 1
         self.col    = 0
         self.pos    = 0
-        self.ch     = ''.isalpha
+        self.ch     = ''
         self.tokens = []
         self.advance()
 
@@ -100,10 +103,8 @@ class Lexer():
             self.add_token_advance(TokenType.EQUAL, '=')
         elif self.is_int(self.ch):
             self.parse_number()
-        elif self.is_key("let"):
-            self.add_token(TokenType.LET, 'let')
         elif self.is_alpha():
-            self.add_token(TokenType.IDENTIFIER, self.get_ident())
+            self.parse_ident_or_key()
         
         else:
             raise SyntaxError(f"Unexpected characters '{self.ch}' at {self.line}:{self.col}")
@@ -176,7 +177,11 @@ class Lexer():
             self.advance()
         return ident
 
-    
+    def parse_ident_or_key(self):
+        ident = self.get_ident()
+        ty = KEYWORDS.get(ident, TokenType.IDENTIFIER)
+        self.add_token(ty, ident)
+
     def is_int(self, ch):
         return '0' <= ch <= '9'
     
@@ -444,7 +449,7 @@ class Interpreter:
 
 def main():
     # try:
-        tokens = Lexer("let x = 5; let y = 2; let z = 3;").tokenize()
+        tokens = Lexer("5 + 5 * 5").tokenize()
         ast    = Parser(tokens).parse()
         # result = Interpreter().interpret(ast)
         # print(tokens)
