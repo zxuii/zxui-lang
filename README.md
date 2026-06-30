@@ -15,6 +15,6 @@ nanti, video tentang pembuatan ini akan di upload setelah semua proses ini seles
 - [x] simple lexer
 - [x] lexer proper untuk angka ( ) / * - * 
 - [ ] lexing keyword, identifier, dll
+- [*] ast
 - [ ] parser
-- [ ] ast
 - [ ] interpreter
