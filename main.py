@@ -234,12 +234,18 @@ class Number(Node):
 
 @dataclass
 class VarDecl(Node):
-    var_node: Node
-    val_node: Node
+    var: Node
+    expr: Node
+
+@dataclass
+class VarAssign(Node):
+    var: Node
+    expr: Node
 
 @dataclass
 class Var(Node):
     ty: Token
+
 
 # ------------ Parsers
 
@@ -301,22 +307,29 @@ class Parser:
         return Block(stmts)
     
     def starts_stmt(self):
-        return self.ct.ty in [TokenType.LET, TokenType.PLUS, TokenType.MINUS, TokenType.LPAREN, TokenType.NUMBER] 
+        return self.ct.ty in [TokenType.LET, TokenType.PLUS, TokenType.MINUS, TokenType.LPAREN, TokenType.NUMBER, TokenType.IDENTIFIER] 
     
     def parse_stmt(self):
         # print(self.ct)
         if self.ct.ty == TokenType.LET:
             return self.parse_var_decl()
+        elif self.ct.ty == TokenType.IDENTIFIER:
+            return self.parse_var_assign()
         else:
             return self.parse_expr()
     
     def parse_var_decl(self):
         self.consume(TokenType.LET)
-        var_node = Var(self.ct)
+        var = Var(self.ct)
         self.consume(TokenType.IDENTIFIER)
         self.consume(TokenType.EQUAL)
-        var_decl = VarDecl(var_node, self.parse_expr())
-        return var_decl
+        return VarDecl(var, self.parse_expr())
+    
+    def parse_var_assign(self):
+        var = Var(self.ct)
+        self.consume(TokenType.IDENTIFIER)
+        self.consume(TokenType.EQUAL)
+        return VarAssign(var, self.parse_expr())
 
     def parse_expr(self):
         node = self.parse_term()
@@ -380,6 +393,9 @@ class Parser:
             node = self.parse_expr()
             self.consume(TokenType.RPAREN)
             return node
+        elif tok.ty == TokenType.IDENTIFIER:
+            self.consume(TokenType.IDENTIFIER)
+            return Var(tok)
         else:
             self.error([TokenType.PLUS, TokenType.MINUS, TokenType.NUMBER, TokenType.LPAREN])
     def parse(self):
@@ -449,10 +465,10 @@ class Interpreter:
 
 def main():
     # try:
-        tokens = Lexer("5 + 5 * 5").tokenize()
+        tokens = Lexer("let x = 5; x = x + 5").tokenize()
         ast    = Parser(tokens).parse()
         # result = Interpreter().interpret(ast)
-        # print(tokens)
+        print(tokens)
         pprint(ast)
         # print(result)
     # except (SyntaxError, ParseError, InterpreterError) as e:
