@@ -1,5 +1,7 @@
-fun x(a, b) {
-
+fun tambah(a, b) {
+    return a + b
 }
 
-x(5, 5)
+let x = tambah(1, 5)
+
+println(x + 5)

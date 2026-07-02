@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 # ------------ Debugging
 
-LOG = True
+LOG = False
 
 # ------------ logger
 
@@ -300,6 +300,11 @@ class Function:
     decl: FunDecl
     closure: Environment
 
+@dataclass
+class NativeFunction:
+    name: str
+    arity: int
+    fn: object
 
 # ------------ Parsers
 
@@ -558,7 +563,7 @@ class Environment:
             logger(f"ENV: get the {name} with value {self.values[name]}")
             return self.values[name]
         if self.enclosing is not None:
-            logger(f"ENV: get the {name} with value {self.values[name]}")
+            logger(f"ENV: get the {name}")
             return self.enclosing.get(name)
         
         raise RuntimeError(f"Undefined variable '{name}' in current scope.")
@@ -570,18 +575,29 @@ class Environment:
             logger(self.values[name])
             return
         if self.enclosing is not None:
-            logger(f"ENV: assigned {name} from {self.values[name]} to ", False)
+            logger(f"ENV: assigned {name}", True)
             self.enclosing.assign(name, value)
-            logger(self.values[name])
             return
         
         raise RuntimeError(f"Undefined variable '{name}' in current scope.")
     
 # ------------ Interpeter
 
+class ReturnSignal(Exception):
+    def __init__(self, val):
+        self.val = val
+
 class Interpreter:
     def __init__(self):
         self.env = Environment()
+        self.define_natives()
+
+    def define_natives(self):
+        self.env.define("println", NativeFunction("println", -1, self.native_println))
+
+    def native_println(self, args):
+        print(*args)
+        return 0
 
     def visit(self, node):
         method_name = f"visit_{type(node).__name__}"
@@ -657,6 +673,37 @@ class Interpreter:
 
     def visit_FunCall(self, node: FunCall):
         fun = self.env.get(node.fun.ty.val)
+        args = [self.visit(arg) for arg in node.args]
+
+        if isinstance(fun, Function):
+
+            if len(args) != len(fun.decl.params):
+                raise RuntimeError(f"function '{node.fun.ty.val}' need {len(fun.decl.params)} arguments but get {len(args)}")
+            
+            call_env = Environment(fun.closure)
+            for param, arg in zip(fun.decl.params, args):
+                self.env.define(param.val, arg)
+
+            prev_env = self.env
+            self.env = call_env
+            return_val = None
+            try:
+                self.visit(fun.decl.block)
+            except ReturnSignal as r:
+                return_val = r.val
+            finally:
+                self.env = prev_env
+
+            return return_val
+        elif isinstance(fun, NativeFunction):
+            if fun.arity != -1 and len(args) != fun.arity:
+                raise RuntimeError(f"function '{node.fun.ty.val}' need {len(fun.decl.params)} arguments but get {len(args)}")
+            return fun.fn(args)
+        else:
+            raise RuntimeError(f"'{node.fun.ty.val}' is not a function at {node.fun.ty.line}:{node.fun.ty.col}")
+    
+    def visit_Return(self, node: Return):
+        raise ReturnSignal(self.visit(node.expr))
 
 # ------------ Mains
 
