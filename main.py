@@ -11,6 +11,8 @@ class TokenType(Enum):
     NUMBER     = auto() # NUMBER
     
     LET        = auto() # let
+    FUN        = auto() # fun
+    RETURN     = auto() # return
     
     PLUS       = auto() # +
     MINUS      = auto() # -
@@ -20,6 +22,9 @@ class TokenType(Enum):
     SEMICOLON  = auto() # ;
     LPAREN     = auto() # (
     RPAREN     = auto() # )
+    LBRACE     = auto() # {
+    RBRACE     = auto() # }
+    COMMA      = auto() # ,
     EQUAL      = auto() # =
 
     EOF        = auto() # EOF
@@ -36,20 +41,27 @@ class Token():
         return f"{self.ty}({self.val})"
         
 KEYWORDS = {
-    "let": TokenType.LET
+    "let": TokenType.LET,
+    "fun": TokenType.FUN,
+    "return": TokenType.RETURN
 }
 
 def tok_in_char(ty):
     if   ty == TokenType.IDENTIFIER: return 'identifier' 
     elif ty == TokenType.NUMBER:     return 'number'
     elif ty == TokenType.LET:        return 'let'
+    elif ty == TokenType.FUN:        return 'fun'
+    elif ty == TokenType.RETURN:     return 'return'
     elif ty == TokenType.PLUS:       return '+'
     elif ty == TokenType.MINUS:      return '-'
     elif ty == TokenType.ASTERISK:   return '*'
     elif ty == TokenType.SLASH:      return '/'
-    elif ty == TokenType.SEMICOLON:   return ';'
+    elif ty == TokenType.SEMICOLON:  return ';'
     elif ty == TokenType.LPAREN:     return '('
     elif ty == TokenType.RPAREN:     return ')'
+    elif ty == TokenType.LBRACE:     return '{'
+    elif ty == TokenType.RBRACE:     return '}'
+    elif ty == TokenType.COMMA:      return ','
     elif ty == TokenType.EQUAL:      return '='
     elif ty == TokenType.EOF:        return 'eof'
     elif ty == TokenType.PROGRAM:    return 'program'
@@ -99,6 +111,12 @@ class Lexer():
             self.add_token_advance(TokenType.LPAREN, '(')
         elif self._is(')'):
             self.add_token_advance(TokenType.RPAREN, ')')
+        elif self._is('{'):
+            self.add_token_advance(TokenType.LBRACE, '{')
+        elif self._is('}'):
+            self.add_token_advance(TokenType.RBRACE, '}')
+        elif self._is(','):
+            self.add_token_advance(TokenType.COMMA, ',')
         elif self._is('='):
             self.add_token_advance(TokenType.EQUAL, '=')
         elif self.is_int(self.ch):
@@ -233,6 +251,16 @@ class Number(Node):
     #     return self.ty.val
 
 @dataclass
+class FunDecl(Node):
+    fun: Node
+    params: list
+    block: Node
+
+@dataclass
+class Fun(Node):
+    ty: Token
+
+@dataclass
 class VarDecl(Node):
     var: Node
     expr: Node
@@ -267,6 +295,10 @@ class Parser:
         if not self.is_at_end():
             self.ct = self.tokens[self.pos]
             self.pos += 1
+    
+    def peek(self):
+        if not self.is_at_end():
+            return self.tokens[self.pos]
 
     def consume(self, ty):
         if self.ct and self.ct.ty == ty:
@@ -297,27 +329,53 @@ class Parser:
     
     def parse_block(self):
         # print(self.ct)
-        stmts = [self.parse_stmt()]
-        while self.ct.ty == TokenType.SEMICOLON:
-            self.consume(TokenType.SEMICOLON)
-            if not self.starts_stmt():
-                break
+        stmts = []
+
+        while self.ct.ty not in [TokenType.EOF, TokenType.RBRACE]:
             stmts.append(self.parse_stmt())
+            
+            if self.ct.ty == TokenType.SEMICOLON:
+                self.consume(TokenType.SEMICOLON)
 
         return Block(stmts)
-    
-    def starts_stmt(self):
-        return self.ct.ty in [TokenType.LET, TokenType.PLUS, TokenType.MINUS, TokenType.LPAREN, TokenType.NUMBER, TokenType.IDENTIFIER] 
-    
+
     def parse_stmt(self):
-        # print(self.ct)
-        if self.ct.ty == TokenType.LET:
+        print(self.ct)
+        if self.ct.ty == TokenType.FUN:
+            return self.parse_fun_decl()
+        elif self.ct.ty == TokenType.LET:
             return self.parse_var_decl()
         elif self.ct.ty == TokenType.IDENTIFIER:
-            return self.parse_var_assign()
+            if self.peek() == TokenType.EQUAL:
+                return self.parse_var_assign()
+            else:
+                return self.parse_expr()
         else:
             return self.parse_expr()
     
+    def parse_fun_decl(self):
+        self.consume(TokenType.FUN)
+        fun = Fun(self.ct)
+        self.consume(TokenType.IDENTIFIER)
+        self.consume(TokenType.LPAREN)
+        fun_params = []
+        
+        if self.ct.ty == TokenType.IDENTIFIER:
+            fun_params.append(self.ct)
+            self.consume(TokenType.IDENTIFIER)
+        
+        while self.ct.ty == TokenType.COMMA:
+            self.consume(TokenType.COMMA)
+            if self.ct.ty == TokenType.IDENTIFIER:
+                fun_params.append(self.ct)
+                self.consume(TokenType.IDENTIFIER)
+        self.consume(TokenType.RPAREN)
+        self.consume(TokenType.LBRACE)
+        fun_block = self.parse_block()
+        self.consume(TokenType.RBRACE)
+        return FunDecl(fun, fun_params, fun_block)
+                    
+
     def parse_var_decl(self):
         self.consume(TokenType.LET)
         var = Var(self.ct)
@@ -366,6 +424,8 @@ class Parser:
                   | MINUS factor
                   | NUMBER
                   | LPAREN expr RPAREN
+                  | LBRACE block RBRACE
+                  | IDENTIFIER
         """
 
         tok = self.ct
@@ -393,11 +453,16 @@ class Parser:
             node = self.parse_expr()
             self.consume(TokenType.RPAREN)
             return node
+        elif tok.ty == TokenType.LBRACE:
+            self.consume(TokenType.LBRACE)
+            node = self.parse_block()
+            self.consume(TokenType.RBRACE)
+            return node
         elif tok.ty == TokenType.IDENTIFIER:
             self.consume(TokenType.IDENTIFIER)
             return Var(tok)
         else:
-            self.error([TokenType.PLUS, TokenType.MINUS, TokenType.NUMBER, TokenType.LPAREN])
+            self.error([TokenType.PLUS, TokenType.MINUS, TokenType.NUMBER, TokenType.LPAREN, TokenType.LBRACE, TokenType.FUN])
     def parse(self):
         node = self.parse_program()
         # print(node)
@@ -465,15 +530,18 @@ class Interpreter:
 
 def main():
     # try:
-        tokens = Lexer("let x = 5; x = x + 5").tokenize()
-        ast    = Parser(tokens).parse()
-        # result = Interpreter().interpret(ast)
-        print(tokens)
-        pprint(ast)
-        # print(result)
-    # except (SyntaxError, ParseError, InterpreterError) as e:
-    #     print(f"{e}", file=sys.stderr)
+    with open("example.zxui", "r") as file:
+        content = file.read()
 
+    tokens = Lexer(content).tokenize()
+    ast    = Parser(tokens).parse()
+    # result = Interpreter().interpret(ast)
+    print("TOKENS")
+    for i, t in enumerate(tokens):
+        print(f"{i}: {t}")
+
+    print("\nAST")
+    pprint(ast)
 
 if __name__ == "__main__":
     main()
