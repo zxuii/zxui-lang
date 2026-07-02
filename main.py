@@ -357,6 +357,11 @@ class Parser:
             return self.parse_fun_decl()
         elif self.ct.ty == TokenType.LET:
             return self.parse_var_decl()
+        elif self.ct.ty == TokenType.LBRACE:
+            self.consume(TokenType.LBRACE)
+            node = self.parse_block()
+            self.consume(TokenType.RBRACE)
+            return node
         elif self.ct.ty == TokenType.IDENTIFIER:
             next_tok = self.peek()
             if next_tok.ty == TokenType.EQUAL:
@@ -473,7 +478,6 @@ class Parser:
                   | MINUS factor
                   | NUMBER
                   | LPAREN expr RPAREN
-                  | LBRACE block RBRACE
                   | fun_call or IDENTIFIER
         """
 
@@ -501,11 +505,6 @@ class Parser:
             self.consume(TokenType.LPAREN)
             node = self.parse_expr()
             self.consume(TokenType.RPAREN)
-            return node
-        elif tok.ty == TokenType.LBRACE:
-            self.consume(TokenType.LBRACE)
-            node = self.parse_block()
-            self.consume(TokenType.RBRACE)
             return node
         elif tok.ty == TokenType.IDENTIFIER:
             next_tok = self.peek()
@@ -588,7 +587,7 @@ def main():
 
     tokens = Lexer(content).tokenize()
     ast    = Parser(tokens).parse()
-    result = Interpreter().interpret(ast)
+    # result = Interpreter().interpret(ast)
     print("TOKENS")
     for i, t in enumerate(tokens):
         print(f"{i}: {t}")
