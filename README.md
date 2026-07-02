@@ -23,4 +23,4 @@ Work cuy!
 - [x] basic interpreter untuk semua ini
 - [x] lexing & parsing variable decl
 - [x] lexing parsing variable assignment, function decl, function call
-- [] interpret semua ini (work in progress)
+- [ ] interpret semua ini (work in progress)
