@@ -257,6 +257,11 @@ class FunDecl(Node):
     block: Node
 
 @dataclass
+class FunCall(Node):
+    fun: Node
+    args: list
+
+@dataclass
 class Fun(Node):
     ty: Token
 
@@ -310,7 +315,7 @@ class Parser:
         if self.ct and self.ct.ty == ty:
             self.advance()
         else:
-            self.error(ty)
+            self.error(expect=ty)
 
     def error(self, msg=None, expect=None):
         if not expect:
@@ -348,13 +353,13 @@ class Parser:
         return Block(stmts)
 
     def parse_stmt(self):
-        print(self.ct)
         if self.ct.ty == TokenType.FUN:
             return self.parse_fun_decl()
         elif self.ct.ty == TokenType.LET:
             return self.parse_var_decl()
         elif self.ct.ty == TokenType.IDENTIFIER:
-            if self.peek() == TokenType.EQUAL:
+            next_tok = self.peek()
+            if next_tok.ty == TokenType.EQUAL:
                 return self.parse_var_assign()
             else:
                 return self.parse_expr()
@@ -371,17 +376,7 @@ class Parser:
         fun = Fun(self.ct)
         self.consume(TokenType.IDENTIFIER)
         self.consume(TokenType.LPAREN)
-        fun_params = []
-        
-        if self.ct.ty == TokenType.IDENTIFIER:
-            fun_params.append(self.ct)
-            self.consume(TokenType.IDENTIFIER)
-        
-        while self.ct.ty == TokenType.COMMA:
-            self.consume(TokenType.COMMA)
-            if self.ct.ty == TokenType.IDENTIFIER:
-                fun_params.append(self.ct)
-                self.consume(TokenType.IDENTIFIER)
+        fun_params = self.parse_params()
         self.consume(TokenType.RPAREN)
         self.consume(TokenType.LBRACE)
         self.inside_fun = True
@@ -390,6 +385,38 @@ class Parser:
         self.consume(TokenType.RBRACE)
         return FunDecl(fun, fun_params, fun_block)
     
+    def parse_fun_call(self):
+        fun = Fun(self.ct)
+        self.consume(TokenType.IDENTIFIER)
+        self.consume(TokenType.LPAREN)
+        fun_args = self.parse_args()
+        self.consume(TokenType.RPAREN)
+        return FunCall(fun, fun_args)
+
+    def parse_args(self):
+        fun_args = []
+        if self.ct.ty != TokenType.RPAREN:
+            fun_args.append(self.parse_expr())
+            while self.ct.ty == TokenType.COMMA:
+                self.consume(TokenType.COMMA)
+                if self.ct.ty != TokenType.RPAREN:
+                    fun_args.append(self.parse_expr())
+
+        return fun_args
+
+    def parse_params(self):
+        fun_params = []
+        if self.ct.ty == TokenType.IDENTIFIER:
+                fun_params.append(self.ct)
+                self.consume(TokenType.IDENTIFIER)
+            
+        while self.ct.ty == TokenType.COMMA:
+            self.consume(TokenType.COMMA)
+            if self.ct.ty == TokenType.IDENTIFIER:
+                fun_params.append(self.ct)
+                self.consume(TokenType.IDENTIFIER)
+        return fun_params
+
     def parse_return(self):
         self.consume(TokenType.RETURN)
 
@@ -447,7 +474,7 @@ class Parser:
                   | NUMBER
                   | LPAREN expr RPAREN
                   | LBRACE block RBRACE
-                  | IDENTIFIER
+                  | fun_call or IDENTIFIER
         """
 
         tok = self.ct
@@ -481,6 +508,10 @@ class Parser:
             self.consume(TokenType.RBRACE)
             return node
         elif tok.ty == TokenType.IDENTIFIER:
+            next_tok = self.peek()
+            if next_tok.ty == TokenType.LPAREN:
+                return self.parse_fun_call()
+            
             self.consume(TokenType.IDENTIFIER)
             return Var(tok)
         else:
@@ -557,13 +588,15 @@ def main():
 
     tokens = Lexer(content).tokenize()
     ast    = Parser(tokens).parse()
-    # result = Interpreter().interpret(ast)
+    result = Interpreter().interpret(ast)
     print("TOKENS")
     for i, t in enumerate(tokens):
         print(f"{i}: {t}")
 
     print("\nAST")
     pprint(ast)
+    # print("\nRESULT")
+    # print(result)
 
 if __name__ == "__main__":
     main()
