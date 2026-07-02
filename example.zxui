@@ -1,5 +1,6 @@
-fun tambah(x, y) {
-    return x + y
-}
+let x = 5;
+let y = 2;
+let z = 4 + 5;
 
-tambah(5, 6);
+x = x + 5
+

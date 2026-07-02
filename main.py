@@ -525,19 +525,55 @@ class Parser:
     def is_at_end(self):
         return self.ct is not None and self.ct.ty == TokenType.EOF
 
+# ------------ Environment
+
+class Environment:
+    def __init__(self, enclosing=None):
+        self.enclosing = enclosing
+        self.values = {}
+
+    def define(self, name, value):
+        print(f"ENV: added {name} with value {value}")
+        self.values[name] = value
+
+    def get(self, name):
+        if name in self.values:
+            print(f"ENV: get the {name}")
+            return self.values[name]
+        if self.enclosing is not None:
+            print(f"ENV: get the {name}")
+            return self.enclosing.get(name)
+        
+        raise RuntimeError(f"Undefined variable '{name}' in current scope.")
+    
+    def assign(self, name, value):
+        if name in self.values:
+            print(f"ENV: assigned {name} from {self.values[name]} to ", end='')
+            self.values[name] = value
+            print(self.values[name])
+            return
+        if self.enclosing is not None:
+            print(f"ENV: assigned {name} from {self.values[name]} to ", end='')
+            self.enclosing.assign(name, value)
+            print(self.values[name])
+            return
+        
+        raise RuntimeError(f"Undefined variable '{name}' in current scope.")
+    
+
 # ------------ Interpeter
 
-class InterpreterError(Exception):
-    pass
-
 class Interpreter:
+    def __init__(self):
+        self.env = Environment()
+
     def visit(self, node):
         method_name = f"visit_{type(node).__name__}"
         method      = getattr(self, method_name, self.generic_visit)
         return method(node)
     
     def generic_visit(self, node):
-        raise InterpreterError(f"No visit_{type(node).__name__} method")
+        raise RuntimeError(f"No visit_{type(node).__name__} method")
     
     def interpret(self, node: Program):
         return self.visit(node)
@@ -560,10 +596,10 @@ class Interpreter:
             return left * right
         elif node.op.ty == TokenType.SLASH:
             if right == 0.0:
-                raise InterpreterError(f"Division by zero at {node.op.line}:{node.op.col}")
+                raise RuntimeError(f"Division by zero at {node.op.line}:{node.op.col}")
             return left / right
         else:
-            raise InterpreterError(f"Unkown binary operator '{node.op.val}' at {node.op.line}:{node.op.col}")
+            raise RuntimeError(f"Unkown binary operator '{node.op.val}' at {node.op.line}:{node.op.col}")
 
     def visit_UnaryOp(self, node: UnaryOp):
         val = self.visit(node.expr)
@@ -573,10 +609,31 @@ class Interpreter:
         elif node.op.ty == TokenType.MINUS:
             return -val
         else:
-            raise InterpreterError(f"Unkown unary operator '{node.op.val}' at {node.op.line}:{node.op.col}")
-        
+            raise RuntimeError(f"Unkown unary operator '{node.op.val}' at {node.op.line}:{node.op.col}")
+    
     def visit_Number(self, node: Number):
         return float(node.ty.val)
+    
+    def visit_Block(self, node: Block):
+        local_env = Environment()
+        
+        prev_env = self.env
+
+        self.env = local_env
+
+        for stmt in node.stmts:
+            self.visit(stmt)
+
+        self.env = prev_env
+
+    def visit_VarDecl(self, node: VarDecl):
+        self.env.define(node.var.ty.val, self.visit(node.expr))
+
+    def visit_VarAssign(self, node: VarAssign):
+        self.env.assign(node.var.ty.val, self.visit(node.expr))
+
+    def visit_Var(self, node: Var):
+        return self.env.get(node.ty.val)
 
 # ------------ Mains
 
@@ -586,16 +643,15 @@ def main():
         content = file.read()
 
     tokens = Lexer(content).tokenize()
-    ast    = Parser(tokens).parse()
-    # result = Interpreter().interpret(ast)
     print("TOKENS")
     for i, t in enumerate(tokens):
         print(f"{i}: {t}")
-
+    ast    = Parser(tokens).parse()
     print("\nAST")
     pprint(ast)
-    # print("\nRESULT")
-    # print(result)
+    result = Interpreter().interpret(ast)
+    print("\nRESULT")
+    print(result)
 
 if __name__ == "__main__":
     main()
