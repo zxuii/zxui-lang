@@ -594,9 +594,18 @@ class Interpreter:
 
     def define_natives(self):
         self.env.define("println", NativeFunction("println", -1, self.native_println))
-
+        self.env.define("print", NativeFunction("print", -1, self.native_print))
+    
     def native_println(self, args):
-        print(*args)
+        self.native_print(args)
+        print()
+        return 0
+    
+    def native_print(self, args):
+        for arg in args:
+            if isinstance(arg, float):
+                arg = int(arg) if arg % 1 == 0 else arg
+            print(arg, end='')
         return 0
 
     def visit(self, node):

@@ -4,4 +4,5 @@ fun tambah(a, b) {
 
 let x = tambah(1, 5)
 
-println(x + 5)
+print(x + 5.2)
+print()
