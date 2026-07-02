@@ -1,8 +1,18 @@
 from enum import Enum, auto
 from dataclasses import dataclass
-from pprint import pprint
-import sys
-import re
+
+# ------------ Debugging
+
+LOG = True
+
+# ------------ logger
+
+def logger(msg='', newline=True):
+    if LOG:
+        if newline:
+            print("[LOGGER]",msg)
+        else:
+            print("[LOGGER]",msg, end='')
 
 # ------------ Tokens
 
@@ -284,6 +294,13 @@ class Var(Node):
     ty: Token
 
 
+# senagja taurh disini biar serasi aja walaupun ini tempatnya untuk ASt hahahaha
+@dataclass
+class Function:
+    decl: FunDecl
+    closure: Environment
+
+
 # ------------ Parsers
 
 class ParseError(Exception):
@@ -533,34 +550,33 @@ class Environment:
         self.values = {}
 
     def define(self, name, value):
-        print(f"ENV: added {name} with value {value}")
+        logger(f"ENV: added {name} with value {value}")
         self.values[name] = value
 
     def get(self, name):
         if name in self.values:
-            print(f"ENV: get the {name}")
+            logger(f"ENV: get the {name} with value {self.values[name]}")
             return self.values[name]
         if self.enclosing is not None:
-            print(f"ENV: get the {name}")
+            logger(f"ENV: get the {name} with value {self.values[name]}")
             return self.enclosing.get(name)
         
         raise RuntimeError(f"Undefined variable '{name}' in current scope.")
     
     def assign(self, name, value):
         if name in self.values:
-            print(f"ENV: assigned {name} from {self.values[name]} to ", end='')
+            logger(f"ENV: assigned {name} from {self.values[name]} to ", False)
             self.values[name] = value
-            print(self.values[name])
+            logger(self.values[name])
             return
         if self.enclosing is not None:
-            print(f"ENV: assigned {name} from {self.values[name]} to ", end='')
+            logger(f"ENV: assigned {name} from {self.values[name]} to ", False)
             self.enclosing.assign(name, value)
-            print(self.values[name])
+            logger(self.values[name])
             return
         
         raise RuntimeError(f"Undefined variable '{name}' in current scope.")
     
-
 # ------------ Interpeter
 
 class Interpreter:
@@ -615,7 +631,7 @@ class Interpreter:
         return float(node.ty.val)
     
     def visit_Block(self, node: Block):
-        local_env = Environment()
+        local_env = Environment(self.env)
         
         prev_env = self.env
 
@@ -635,6 +651,13 @@ class Interpreter:
     def visit_Var(self, node: Var):
         return self.env.get(node.ty.val)
 
+    def visit_FunDecl(self, node: FunDecl):
+        fun = Function(node, self.env)
+        self.env.define(node.fun.ty.val, fun)
+
+    def visit_FunCall(self, node: FunCall):
+        fun = self.env.get(node.fun.ty.val)
+
 # ------------ Mains
 
 def main():
@@ -643,15 +666,15 @@ def main():
         content = file.read()
 
     tokens = Lexer(content).tokenize()
-    print("TOKENS")
+    logger("TOKENS")
     for i, t in enumerate(tokens):
-        print(f"{i}: {t}")
+        logger(f"{i}: {t}")
     ast    = Parser(tokens).parse()
-    print("\nAST")
-    pprint(ast)
+    logger("AST")
+    logger(ast)
     result = Interpreter().interpret(ast)
-    print("\nRESULT")
-    print(result)
+    logger("RESULT")
+    logger(result)
 
 if __name__ == "__main__":
     main()

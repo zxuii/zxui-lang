@@ -1,6 +1,5 @@
-let x = 5;
-let y = 2;
-let z = 4 + 5;
+fun x(a, b) {
 
-x = x + 5
+}
 
+x(5, 5)
