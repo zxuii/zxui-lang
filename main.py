@@ -261,6 +261,10 @@ class Fun(Node):
     ty: Token
 
 @dataclass
+class Return(Node):
+    expr: Node
+
+@dataclass
 class VarDecl(Node):
     var: Node
     expr: Node
@@ -287,6 +291,8 @@ class Parser:
         self.ct     = None
         self.advance()
 
+        self.inside_fun = False
+
         # self.advance(TokenType.PROGRAM)
         
         # print(self.ct)
@@ -306,7 +312,7 @@ class Parser:
         else:
             self.error(ty)
 
-    def error(self, expect=None):
+    def error(self, msg=None, expect=None):
         if not expect:
             expect_str = "unknown"
         elif isinstance(expect, list):
@@ -314,8 +320,10 @@ class Parser:
         else:
             expect_str = tok_in_char(expect)
         
-        if self.ct is None or self.ct.ty == TokenType.EOF:
+        if self.ct is None or msg is None or self.ct.ty == TokenType.EOF:
             raise ParseError(f"Unexpected End of File. expected '{expect_str}' at {self.ct.line}:{self.ct.col}")
+        if msg:
+            raise ParseError(msg + f" at {self.ct.line}:{self.ct.col}")
         raise ParseError(f"Unexpected token '{self.ct.val}'. expected '{expect_str}' at {self.ct.line}:{self.ct.col}")
     def parse_program(self):
         self.consume(TokenType.PROGRAM)
@@ -350,6 +358,11 @@ class Parser:
                 return self.parse_var_assign()
             else:
                 return self.parse_expr()
+        elif self.ct.ty == TokenType.RETURN:
+            if self.inside_fun:
+                return self.parse_return()
+            else:
+                self.error("Return statement must be inside some function.")
         else:
             return self.parse_expr()
     
@@ -371,10 +384,19 @@ class Parser:
                 self.consume(TokenType.IDENTIFIER)
         self.consume(TokenType.RPAREN)
         self.consume(TokenType.LBRACE)
+        self.inside_fun = True
         fun_block = self.parse_block()
+        self.inside_fun = False
         self.consume(TokenType.RBRACE)
         return FunDecl(fun, fun_params, fun_block)
-                    
+    
+    def parse_return(self):
+        self.consume(TokenType.RETURN)
+
+        while self.ct in [TokenType.SEMICOLON, TokenType.RBRACE, TokenType.EOF]:
+            return Return(NoOp())
+        
+        return Return(self.parse_expr())
 
     def parse_var_decl(self):
         self.consume(TokenType.LET)
