@@ -23,4 +23,41 @@ Work cuy!
 - [x] basic interpreter untuk semua ini
 - [x] lexing & parsing variable decl
 - [x] lexing parsing variable assignment, function decl, function call
-- [ ] interpret semua ini (work in progress)
+- [x] interpret semua ini
+
+## Penyelesaian proyek
+
+Seluruh hal yang ada di TODOs sebelumnya sudah selesai sih, jadi aku bingung, apa yang harus kulakukan, tapi sebenarnya, buat apa aku bingung dengan apa yang harus aku buat? sedangkan hal yang harus aku lakukan banyak sekali, seperti merewrite ini semua ke rust lah, menambahkan berbagai macam fitur seperti if-else statement, atau hal hal lainnya, karena ini proof-of-concept kalau aku bisa menulis ini semua di python, maka masuk akal kalau aku bisa menulis ini semua di rust bukan? maka dari itu aku ingin mencoba menulis ulang hingga bisa menjalankan kode yang sama persis di dalam example.zxui yang ada di root proyek ini.
+
+kalau penasaran, isi nya cuma:
+
+```kotlin
+fun caller(name) {
+    fun things() {
+        println(name);
+    }
+    return things;
+}
+
+fun tambah(a, b) {
+    return a + b;
+}
+
+let x = tambah(1, 5);
+
+print(x + 5.2);
+println();
+
+let c = caller(55555);
+let call = c()
+```
+
+tapi ya setidaknya totally working:
+
+```bash
+> python main.py              
+11.2
+55555
+```
+
+Oke, jadi tujuan sekarang sudah jelas, tinggal eksekusi aja. see ya!
