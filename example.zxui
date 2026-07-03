@@ -15,5 +15,4 @@ print(x + 5.2);
 println();
 
 let c = caller(55555);
-let call = c
-println(call())
+let call = c()

@@ -350,7 +350,7 @@ class Parser:
         if self.ct is None or msg is None or self.ct.ty == TokenType.EOF:
             raise ParseError(f"Unexpected End of File. expected '{expect_str}' at {self.ct.line}:{self.ct.col}")
         if msg:
-            raise ParseError(msg + f" at {self.ct.line}:{self.ct.col}")
+            raise ParseError(f"{msg} at {self.ct.line}:{self.ct.col}")
         raise ParseError(f"Unexpected token '{self.ct.val}'. expected '{expect_str}' at {self.ct.line}:{self.ct.col}")
     def parse_program(self):
         self.consume(TokenType.PROGRAM)
@@ -447,7 +447,7 @@ class Parser:
     def parse_return(self):
         self.consume(TokenType.RETURN)
 
-        while self.ct in [TokenType.SEMICOLON, TokenType.RBRACE, TokenType.EOF]:
+        while self.ct.ty in [TokenType.SEMICOLON, TokenType.RBRACE, TokenType.EOF]:
             return Return(NoOp())
         
         return Return(self.parse_expr())
@@ -536,7 +536,7 @@ class Parser:
             self.consume(TokenType.IDENTIFIER)
             return Var(tok)
         else:
-            self.error([TokenType.PLUS, TokenType.MINUS, TokenType.NUMBER, TokenType.LPAREN, TokenType.LBRACE, TokenType.FUN])
+            self.error(expect=[TokenType.PLUS, TokenType.MINUS, TokenType.NUMBER, TokenType.LPAREN, TokenType.LBRACE, TokenType.FUN, TokenType.LET])
     def parse(self):
         node = self.parse_program()
         # print(node)
