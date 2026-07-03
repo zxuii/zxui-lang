@@ -1,8 +1,19 @@
-fun tambah(a, b) {
-    return a + b
+fun caller(name) {
+    fun things() {
+        println(name);
+    }
+    return things;
 }
 
-let x = tambah(1, 5)
+fun tambah(a, b) {
+    return a + b;
+}
 
-print(x + 5.2)
-print()
+let x = tambah(1, 5);
+
+print(x + 5.2);
+println();
+
+let c = caller(55555);
+let call = c
+println(call())

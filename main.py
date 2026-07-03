@@ -318,7 +318,7 @@ class Parser:
         self.ct     = None
         self.advance()
 
-        self.inside_fun = False
+        self.fun_counter = 0
 
         # self.advance(TokenType.PROGRAM)
         
@@ -391,7 +391,7 @@ class Parser:
             else:
                 return self.parse_expr()
         elif self.ct.ty == TokenType.RETURN:
-            if self.inside_fun:
+            if self.fun_counter > 0:
                 return self.parse_return()
             else:
                 self.error("Return statement must be inside some function.")
@@ -406,9 +406,9 @@ class Parser:
         fun_params = self.parse_params()
         self.consume(TokenType.RPAREN)
         self.consume(TokenType.LBRACE)
-        self.inside_fun = True
+        self.fun_counter += 1
         fun_block = self.parse_block()
-        self.inside_fun = False
+        self.fun_counter -= 1
         self.consume(TokenType.RBRACE)
         return FunDecl(fun, fun_params, fun_block)
     
