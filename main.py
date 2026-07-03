@@ -691,7 +691,7 @@ class Interpreter:
             
             call_env = Environment(fun.closure)
             for param, arg in zip(fun.decl.params, args):
-                self.env.define(param.val, arg)
+                call_env.define(param.val, arg)
 
             prev_env = self.env
             self.env = call_env
