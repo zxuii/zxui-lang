@@ -6,67 +6,102 @@ pub struct Lexer {
     col: usize,
     pos: usize,
     ch: Option<char>,
-    pub tokens: Vec<Token>
+    pub tokens: Vec<Token>,
 }
 
 impl Lexer {
     pub fn new(code: String) -> Self {
         let code: Vec<char> = code.chars().collect();
         Self {
-            code, line: 1, col: 0, pos: 0, ch: None, tokens: vec![]
+            code,
+            line: 1,
+            col: 0,
+            pos: 0,
+            ch: None,
+            tokens: vec![],
         }
+    }
+
+    fn error(&self, e: String) {
+        eprintln!("Lexer Error: {}", e);
+        std::process::exit(1);
     }
 
     pub fn tokenize(&mut self) {
         self.advance();
         self.add_token(TokenType::Program);
         while !(self.ch == None) {
-            self.next_token();
+            match self.next_token() {
+                Ok(_) => {}
+                Err(e) => {
+                    self.error(e);
+                }
+            }
         }
 
         self.add_token(TokenType::Eof);
     }
-    fn next_token(&mut self) {
+    fn next_token(&mut self) -> Result<(), String> {
         self.skip_whitespace();
 
         if self.ch == None {
-            return;
+            return Ok(())
         }
 
         if self.ch == Some('+') {
             self.add_token_advance(TokenType::Plus);
+            Ok(())
         } else if self.ch == Some('-') {
             self.add_token_advance(TokenType::Minus);
+            Ok(())
         } else if self.ch == Some('*') {
-            self.add_token_advance(TokenType::Asterisk)
+            self.add_token_advance(TokenType::Asterisk);
+            Ok(())
         } else if self.ch == Some('/') {
             self.add_token_advance(TokenType::Slash);
+            Ok(())
         } else if self.ch == Some(';') {
             self.add_token_advance(TokenType::Semicolon);
+            Ok(())
         } else if self.ch == Some('(') {
             self.add_token_advance(TokenType::Lparen);
+            Ok(())
         } else if self.ch == Some(')') {
             self.add_token_advance(TokenType::Rparen);
+            Ok(())
         } else if self.ch == Some('{') {
             self.add_token_advance(TokenType::Lbrace);
+            Ok(())
         } else if self.ch == Some('}') {
             self.add_token_advance(TokenType::Rbrace);
+            Ok(())
         } else if self.ch == Some(',') {
             self.add_token_advance(TokenType::Comma);
+            Ok(())
         } else if self.ch == Some('=') {
             self.add_token_advance(TokenType::Equal);
+            Ok(())
         } else if self.is_alpha() {
             self.parse_ident_or_key();
-        } 
-        else if self.is_int(self.ch) {
+            Ok(())
+        } else if self.is_int(self.ch) {
             self.parse_number();
-        } 
+            Ok(())
+        } else {
+            let mut c = String::new();
+            if self.ch.is_none() {
+                c.push_str("something");
+            } else {
+                c.push(self.ch.unwrap())
+            }
+            Err(format!("unexpected character '{}' at {}:{}", c, self.line, self.col).to_string())
+        }
     }
 
     fn advance(&mut self) {
         if self.ch == Some('\n') {
             self.line += 1;
-            self.col   = 1;
+            self.col = 1;
         } else {
             self.col += 1
         }
@@ -80,7 +115,11 @@ impl Lexer {
         self.pos += 1
     }
     fn skip_whitespace(&mut self) {
-        while self.ch == Some(' ') || self.ch == Some('\n') || self.ch == Some('\t') || self.ch == Some('\r') {
+        while self.ch == Some(' ')
+            || self.ch == Some('\n')
+            || self.ch == Some('\t')
+            || self.ch == Some('\r')
+        {
             self.advance()
         }
     }
@@ -118,11 +157,11 @@ impl Lexer {
 
     fn peek(&self) -> Option<char> {
         if self.pos >= self.code.len() {
-            return None
+            return None;
         }
         Some(self.code[self.pos])
     }
-    
+
     fn is_alpha(&self) -> bool {
         self.ch >= Some('a') && self.ch <= Some('z') || self.ch >= Some('A') && self.ch <= Some('Z')
     }
@@ -147,7 +186,7 @@ impl Lexer {
             "let" => TokenType::Let,
             "fun" => TokenType::Fun,
             "return" => TokenType::Return,
-            _ => TokenType::Identifier(ident.clone())
+            _ => TokenType::Identifier(ident.clone()),
         };
         self.add_token(ty)
     }
