@@ -46,7 +46,6 @@ impl std::fmt::Display for TokenType {
 
 pub struct Token {
     pub ty: TokenType,
-    pub val: String,
     pub line: usize,
     pub col: usize
 }
@@ -58,9 +57,9 @@ impl std::fmt::Display for Token {
 }
 
 impl Token {
-    pub fn new(ty: TokenType, val: String, line: usize, col: usize) -> Self {
+    pub fn new(ty: TokenType, line: usize, col: usize) -> Self {
         Self {
-            ty, val, line, col
+            ty, line, col
         }
     }
 }

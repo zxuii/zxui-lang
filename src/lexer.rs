@@ -19,12 +19,12 @@ impl Lexer {
 
     pub fn tokenize(&mut self) {
         self.advance();
-        self.add_token(TokenType::Program, "program".to_string());
+        self.add_token(TokenType::Program);
         while !(self.ch == None) {
             self.next_token();
         }
 
-        self.add_token(TokenType::Eof, "eof".to_string());
+        self.add_token(TokenType::Eof);
     }
     fn next_token(&mut self) {
         self.skip_whitespace();
@@ -34,27 +34,27 @@ impl Lexer {
         }
 
         if self.ch == Some('+') {
-            self.add_token_advance(TokenType::Plus, "+".to_string());
+            self.add_token_advance(TokenType::Plus);
         } else if self.ch == Some('-') {
-            self.add_token_advance(TokenType::Minus, "-".to_string());
+            self.add_token_advance(TokenType::Minus);
         } else if self.ch == Some('*') {
-            self.add_token_advance(TokenType::Asterisk, "*".to_string())
+            self.add_token_advance(TokenType::Asterisk)
         } else if self.ch == Some('/') {
-            self.add_token_advance(TokenType::Slash, "/".to_string());
+            self.add_token_advance(TokenType::Slash);
         } else if self.ch == Some(';') {
-            self.add_token_advance(TokenType::Semicolon, ";".to_string());
+            self.add_token_advance(TokenType::Semicolon);
         } else if self.ch == Some('(') {
-            self.add_token_advance(TokenType::Lparen, "(".to_string());
+            self.add_token_advance(TokenType::Lparen);
         } else if self.ch == Some(')') {
-            self.add_token_advance(TokenType::Rparen, ")".to_string());
+            self.add_token_advance(TokenType::Rparen);
         } else if self.ch == Some('{') {
-            self.add_token_advance(TokenType::Lbrace, "{".to_string());
+            self.add_token_advance(TokenType::Lbrace);
         } else if self.ch == Some('}') {
-            self.add_token_advance(TokenType::Rbrace, "}".to_string());
+            self.add_token_advance(TokenType::Rbrace);
         } else if self.ch == Some(',') {
-            self.add_token_advance(TokenType::Comma, ",".to_string());
+            self.add_token_advance(TokenType::Comma);
         } else if self.ch == Some('=') {
-            self.add_token_advance(TokenType::Equal, "=".to_string());
+            self.add_token_advance(TokenType::Equal);
         } else if self.is_alpha() {
             self.parse_ident_or_key();
         } 
@@ -84,11 +84,11 @@ impl Lexer {
             self.advance()
         }
     }
-    fn add_token(&mut self, ty: TokenType, val: String) {
-        self.tokens.push(Token::new(ty, val, self.line, self.col))
+    fn add_token(&mut self, ty: TokenType) {
+        self.tokens.push(Token::new(ty, self.line, self.col))
     }
-    fn add_token_advance(&mut self, ty: TokenType, val: String) {
-        self.add_token(ty, val);
+    fn add_token_advance(&mut self, ty: TokenType) {
+        self.add_token(ty);
         self.advance()
     }
 
@@ -113,7 +113,7 @@ impl Lexer {
             }
         }
 
-        self.add_token(TokenType::Number(num.parse().unwrap()), num);
+        self.add_token(TokenType::Number(num.parse().unwrap()));
     }
 
     fn peek(&self) -> Option<char> {
@@ -149,6 +149,6 @@ impl Lexer {
             "return" => TokenType::Return,
             _ => TokenType::Identifier(ident.clone())
         };
-        self.add_token(ty, ident)
+        self.add_token(ty)
     }
 }
