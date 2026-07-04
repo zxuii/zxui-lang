@@ -1,12 +1,29 @@
-mod tokens;
 mod lexer;
+mod tokens;
 
 use lexer::Lexer;
+use std::{env, fs::read_to_string, process::exit};
 
 fn main() {
-    let mut lex = Lexer::new("let x = 5435345.34'534".to_string());
-    lex.tokenize();
-    for t in lex.tokens {
-        println!("{}", t);
+    let args: Vec<String> = env::args().collect();
+    if let Some(path) = args.get(1) {
+        let file = read_to_string(path);
+        match file {
+            Ok(f) => {
+                let mut lex = Lexer::new(f);
+                lex.tokenize();
+                for t in lex.tokens {
+                    println!("{}", t);
+                }
+            }
+
+            Err(e) => {
+                eprintln!("Error when opening file '{}': {}", path, e);
+                exit(1);
+            }
+        }
+    } else {
+        eprintln!("usage: zxui <file.zxui>");
+        exit(1);
     }
 }

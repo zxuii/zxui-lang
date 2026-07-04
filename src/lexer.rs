@@ -38,7 +38,7 @@ impl Lexer {
 
     pub fn tokenize(&mut self) {
         self.advance();
-        self.add_token(TokenType::Program);
+        self.add_token(TokenType::Program, self.line, self.col);
         while !(self.ch == None) {
             match self.next_token() {
                 Ok(_) => {}
@@ -48,7 +48,7 @@ impl Lexer {
             }
         }
 
-        self.add_token(TokenType::Eof);
+        self.add_token(TokenType::Eof, self.line, self.col);
     }
     fn next_token(&mut self) -> Result<(), String> {
         self.skip_whitespace();
@@ -132,11 +132,11 @@ impl Lexer {
             self.advance()
         }
     }
-    fn add_token(&mut self, ty: TokenType) {
-        self.tokens.push(Token::new(ty, self.line, self.col))
+    fn add_token(&mut self, ty: TokenType, line: usize, col: usize) {
+        self.tokens.push(Token::new(ty, line, col))
     }
     fn add_token_advance(&mut self, ty: TokenType) {
-        self.add_token(ty);
+        self.add_token(ty, self.line, self.col);
         self.advance()
     }
 
@@ -145,6 +145,8 @@ impl Lexer {
     }
 
     fn parse_number(&mut self) {
+        let start_line = self.line;
+        let start_col = self.line;
         let mut num = String::new();
 
         while self.is_int(self.ch) {
@@ -161,7 +163,7 @@ impl Lexer {
             }
         }
 
-        self.add_token(TokenType::Number(num.parse().unwrap()));
+        self.add_token(TokenType::Number(num.parse().unwrap()), start_line, start_col);
     }
 
     fn peek(&self) -> Option<char> {
@@ -190,6 +192,8 @@ impl Lexer {
     }
 
     fn parse_ident_or_key(&mut self) {
+        let start_line = self.line;
+        let start_col = self.col;
         let ident = self.get_ident();
         let ty = match ident.as_str() {
             "let" => TokenType::Let,
@@ -197,6 +201,6 @@ impl Lexer {
             "return" => TokenType::Return,
             _ => TokenType::Identifier(ident.clone()),
         };
-        self.add_token(ty)
+        self.add_token(ty, start_line, start_col)
     }
 }
