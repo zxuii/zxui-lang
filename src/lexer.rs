@@ -128,7 +128,7 @@ impl Lexer {
     }
 
     fn is_alnum(&self) -> bool {
-        self.is_alpha() && self.is_alnum()
+        self.is_alpha() || self.is_int(self.ch)
     }
 
     fn get_ident(&mut self) -> String {

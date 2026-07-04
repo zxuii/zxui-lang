@@ -22,8 +22,8 @@ pub enum TokenType {
 impl std::fmt::Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TokenType::Identifier(ident) => { write!(f, "{ident}") }
-            TokenType::Number(num) => { write!(f, "{num}")}
+            TokenType::Identifier(ident) => { write!(f, "identifier({ident})") }
+            TokenType::Number(num) => { write!(f, "number({num})")}
             TokenType::Let => { write!(f, "let") }
             TokenType::Fun => { write!(f, "fun") }
             TokenType::Return => { write!(f, "return") }
@@ -53,7 +53,7 @@ pub struct Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({}) at {}:{}", self.ty, self.val, self.line, self.col)
+        write!(f, "{} at {}:{}", self.ty, self.line, self.col)
     }
 }
 
