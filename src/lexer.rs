@@ -2,6 +2,7 @@ use crate::tokens::{Token, TokenType};
 
 pub struct Lexer {
     code: Vec<char>,
+    code_raw: String,
     line: usize,
     col: usize,
     pos: usize,
@@ -10,10 +11,11 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(code: String) -> Self {
-        let code: Vec<char> = code.chars().collect();
+    pub fn new(code_raw: String) -> Self {
+        let code: Vec<char> = code_raw.chars().collect();
         Self {
             code,
+            code_raw,
             line: 1,
             col: 0,
             pos: 0,
@@ -24,6 +26,13 @@ impl Lexer {
 
     fn error(&self, e: String) {
         eprintln!("Lexer Error: {}", e);
+        eprintln!("    {}", self.code_raw.lines().nth(self.line - 1).unwrap());
+        let mut cursor = String::from("    ");
+        for _ in 0..self.col - 1 {
+            cursor.push(' ');
+        }
+        cursor.push('^');
+        eprintln!("{}", cursor);
         std::process::exit(1);
     }
 
@@ -45,7 +54,7 @@ impl Lexer {
         self.skip_whitespace();
 
         if self.ch == None {
-            return Ok(())
+            return Ok(());
         }
 
         if self.ch == Some('+') {
