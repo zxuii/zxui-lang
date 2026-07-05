@@ -2,6 +2,7 @@
 pub enum Expr {
     Identifier(String),
     Number(f64),
+    Null,
     Unary {
         op: UnaryOp,
         expr: Box<Expr>,

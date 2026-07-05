@@ -308,6 +308,10 @@ impl Parser {
                 self.consume(TokenType::Number(n))?;
                 Ok(Expr::Number(n))
             }
+            TokenType::Null => {
+                self.consume(TokenType::Null)?;
+                Ok(Expr::Null)
+            }
             TokenType::Lparen => {
                 self.consume(TokenType::Lparen)?;
                 let node = self.parse_expr()?;
