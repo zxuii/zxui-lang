@@ -1,6 +1,6 @@
 use crate::ast::{BinOp, Expr, Stmt, UnaryOp};
 use crate::environment::Environment;
-use crate::object::Object;
+use crate::object::Value;
 
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -16,19 +16,19 @@ impl Interpreter {
         }
     }
 
-    pub fn eval_expr(&self, expr: &Expr) -> Result<Object, String> {
+    pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
         match expr {
-            Expr::Number(num) => Ok(Object::Number(*num)),
-            Expr::Null => Ok(Object::Null),
-            Expr::NoOp => Ok(Object::Null),
+            Expr::Number(num) => Ok(Value::Number(*num)),
+            Expr::Null => Ok(Value::Null),
+            Expr::NoOp => Ok(Value::Null),
             Expr::Identifier(name) => {
                 self.env.borrow().get(name.clone())
             }
             Expr::Unary { op, expr } => {
                 let val = self.eval_expr(expr)?;
                 match (op, val) {
-                    (UnaryOp::Plus, Object::Number(num)) => Ok(Object::Number(num)),
-                    (UnaryOp::Minus, Object::Number(num)) => Ok(Object::Number(-num)),
+                    (UnaryOp::Plus, Value::Number(num)) => Ok(Value::Number(num)),
+                    (UnaryOp::Minus, Value::Number(num)) => Ok(Value::Number(-num)),
                     _ => Err("Unary op on non-number".into()),   
                 }
             }
@@ -36,7 +36,7 @@ impl Interpreter {
                 let l = self.eval_expr(left)?;
                 let r = self.eval_expr(right)?;
                 match (l, r) {
-                    (Object::Number(a), Object::Number(b)) => {
+                    (Value::Number(a), Value::Number(b)) => {
                         let result = match op {
                             BinOp::Plus => a + b,
                             BinOp::Minus => a - b,
@@ -46,7 +46,7 @@ impl Interpreter {
                                 a / b
                             },
                         };
-                        Ok(Object::Number(result))
+                        Ok(Value::Number(result))
                     }
                     _ => Err("Binary operation on non-numbers".into())
                 }
@@ -58,7 +58,7 @@ impl Interpreter {
         }
     }
 
-    pub fn exec_stmt(&mut self, stmt: &Stmt) -> Result<Option<Object>, String> {
+    pub fn exec_stmt(&mut self, stmt: &Stmt) -> Result<Option<Value>, String> {
         match stmt {
             Stmt::Program(stmts) => {
                 let mut ret = None;

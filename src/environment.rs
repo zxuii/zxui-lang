@@ -1,4 +1,4 @@
-use crate::object::Object;
+use crate::object::Value;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 pub struct Environment {
     pub enclosing: Option<Rc<RefCell<Environment>>>,
-    values: HashMap<String, Object>,
+    values: HashMap<String, Value>,
 }
 
 impl Environment {
@@ -24,11 +24,11 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, name: String, value: Object) {
+    pub fn define(&mut self, name: String, value: Value) {
         self.values.insert(name, value);
     }
 
-    pub fn get(&self, name: String) -> Result<Object, String> {
+    pub fn get(&self, name: String) -> Result<Value, String> {
         if let Some(val) = self.values.get(&name) {
             Ok(val.clone())
         } else {
@@ -40,7 +40,7 @@ impl Environment {
         }
     }
 
-    pub fn assign(&mut self, name: String, value: Object) -> Result<(), String> {
+    pub fn assign(&mut self, name: String, value: Value) -> Result<(), String> {
         if self.values.contains_key(&name) {
             self.values.insert(name.clone(), value);
             Ok(())

@@ -28,7 +28,7 @@ fn main() {
                         println!("{:#?}", stmt);
                         match Interpreter::new().exec_stmt(&stmt) {
                             Ok(result) => {
-                                println!("{:?}", result.unwrap_or(object::Object::Null) );
+                                println!("{:?}", result.unwrap_or(object::Value::Null) );
                             }
 
                             Err(e) => eprintln!("Runtime Error: {e}")

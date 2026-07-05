@@ -1,16 +1,16 @@
 #[derive(Debug, Clone)]
-pub enum Object {
+pub enum Value {
     Null,
     Number(f64),
 }
 
-impl Object {
-    fn equals(&self, other: &Object) -> bool {
+impl Value {
+    fn equals(&self, other: &Value) -> bool {
         match (self, other) {
-            (Object::Null, Object::Null) => true,
-            (_, Object::Null) => false,
-            (Object::Null, _) => false,
-            (Object::Number(left), Object::Number(right)) => left == right,
+            (Value::Null, Value::Null) => true,
+            (_, Value::Null) => false,
+            (Value::Null, _) => false,
+            (Value::Number(left), Value::Number(right)) => left == right,
         }
     }
 }
