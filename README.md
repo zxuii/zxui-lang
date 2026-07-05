@@ -2,11 +2,12 @@
 
 Zxui adalah bahasa pemrograman yang ditulis di rust dengan menggunakan arsitektur Tree-Walk interpreter yang meng-traverse setiap tree yang ada. walau lambat tapi karena cukup mudah di implemnetasikan kenapa tidak yakan? dan juga bahasa ini masih tahap pengembangan dan sangat jauh sekali dari kata selesai. kuharap aku terus melakukan update kepada bahasa pemrograman ini agar bisa menjadi bahasa pemrograman yang sangat bagus kedepannya. Aku berharap juga agar ini tidak lagi AST-based interpreter tetapi jadi Bytecode-based interpreter.
 
-`example.zxui`:
+`closure.zxui`:
 ```js
 fun caller(name) {
     fun things() {
-        println(name);
+        println(name, "fungsi things()");
+        return 0;
     }
     return things;
 }
@@ -17,10 +18,9 @@ fun tambah(a, b) {
 
 let x = tambah(1, 5);
 
-print(x + 5.2);
-println();
+println("tambah(1,5) = ", x + 5.2);
 
-let c = caller(55555);
+let c = caller("ini dipanggil dari: ");
 c()
 ```
 
