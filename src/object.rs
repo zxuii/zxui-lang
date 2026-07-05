@@ -2,15 +2,49 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{ast::Stmt, environment::Environment};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Value {
     Null,
     Number(f64),
     Function {
+        name: String,
         params: Vec<String>,
         body: Vec<Stmt>,
         closure: Rc<RefCell<Environment>>,
     },
+    NativeFunction {
+        name: String,
+        arity: i32,
+        fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>,
+    }
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Value::Null => write!(f, "null"),
+            Value::Number(num) => write!(f, "{}", num),
+            Value::Function { name, params: _, body: _, closure: _ } => write!(f, "[fun {name}]"),
+            Value::NativeFunction { name, .. } => write!(f, "[native fun {name}]"),
+        }
+    }
+}
+
+impl std::fmt::Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Value::Null => write!(f, "null"),
+            Value::Number(num) => write!(f, "{}", num),
+            Value::Function { name, params: _, body: _, closure: _ } => write!(f, "[fun {name}]"),
+            Value::NativeFunction { name, .. } => write!(f, "[native fun {name}]"),
+        }
+    }
+}
+
+impl Value {
+    pub fn native_fun(name: String, arity: i32, fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>) -> Self {
+        Self::NativeFunction { name, arity, fun }
+    }
 }
 
 // impl Value {
