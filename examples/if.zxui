@@ -1,0 +1,9 @@
+fun cekPembuat(name){
+    if (name == "Hafidh") {
+        return "Kamu Pembuat bahasa ini!"
+    }
+
+    return "Aku ga kenal kamu."
+}
+let name = readline("Masukan nama: ");
+println(cekPembuat(name))
