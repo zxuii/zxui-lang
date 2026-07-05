@@ -2,6 +2,7 @@ use crate::ast::{BinOp, Expr, Stmt, UnaryOp};
 use crate::tokens::{Token, TokenType};
 
 pub struct Parser {
+    code: String,
     tokens: Vec<Token>,
     pos: usize,
     ct: Option<Token>,
@@ -9,8 +10,9 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
+    pub fn new(code: String, tokens: Vec<Token>) -> Self {
         let mut parser = Self {
+            code,
             tokens,
             pos: 0,
             ct: None,
@@ -58,19 +60,27 @@ impl Parser {
                 .join("' or '"),
             None => "unknown".to_string(),
         };
+
+        let snippet = format!("    {}", self.code.lines().nth(self.ct.as_ref().unwrap().line - 1).unwrap());
+        let mut cursor = String::from("    ");
+        for _ in 0..self.ct.as_ref().unwrap().col - 1 {
+            cursor.push(' ');
+        }
+        cursor.push('^');
+
         match &self.ct {
             None => Err(format!("Unexpected End of File. expected '{}'", expect_str)),
             Some(tok) if tok.ty == TokenType::Eof => Err(format!(
-                "Unexpected End of File. expected '{}' at {}:{}",
-                expect_str, tok.line, tok.col
+                "Unexpected End of File. expected '{}' at {}:{}\n{}\n{}",
+                expect_str, tok.line, tok.col, snippet, cursor
             )),
             Some(tok) => {
                 if let Some(m) = msg {
-                    Err(format!("{} at {}:{}", m, tok.line, tok.col))
+                    Err(format!("{} at {}:{}\n{}\n{}", m, tok.line, tok.col, snippet, cursor))
                 } else {
                     Err(format!(
-                        "Unexpected token '{}'. expected '{}' at {}:{}",
-                        tok.ty, expect_str, tok.line, tok.col
+                        "Unexpected token '{}'. expected '{}' at {}:{}\n{}\n{}",
+                        tok.ty, expect_str, tok.line, tok.col, snippet, cursor
                     ))
                 }
             }

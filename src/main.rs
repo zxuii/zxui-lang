@@ -12,14 +12,18 @@ fn main() {
         let file = read_to_string(path);
         match file {
             Ok(f) => {
-                let mut lex = Lexer::new(f);
+                let mut lex = Lexer::new(f.clone());
                 lex.tokenize();
                 for t in &lex.tokens {
                     println!("{}", t);
                 }
 
-                let mut parse = parser::Parser::new(lex.tokens);
-                println!("{:#?}", parse.parse().expect("Parse Error"));
+                let parse = parser::Parser::new(f, lex.tokens).parse();
+                match parse {
+                    Ok(stmt) => println!("{:#?}", stmt),
+                    Err(e) => eprintln!("Parse Error: {e}")
+                }
+                // println!("{:#?}", parse.parse().expect("Parse Error"));
             }
 
             Err(e) => {
