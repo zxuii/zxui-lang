@@ -68,7 +68,16 @@ impl Interpreter {
                         };
                         Ok(Value::Number(result))
                     }
-                    _ => Err("binary operation on non-numbers".into()),
+
+                    (Value::String(a), Value::String(b)) if matches!(op, BinOp::Plus) => {
+                        Ok(Value::String(a + &b))
+                    }
+                    
+                    (Value::String(a), Value::Number(b)) if matches!(op, BinOp::Multiply) => {
+                        Ok(Value::String(a.repeat(b as usize)))
+                    }
+                    
+                    _ => Err("binary operation on unsupported type".into()),
                 }
             }
 
