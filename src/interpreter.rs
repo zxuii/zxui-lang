@@ -92,7 +92,7 @@ impl Interpreter {
 
             Stmt::Assign { name, expr } => {
                 let val = self.eval_expr(expr)?;
-                self.env.borrow_mut().assign(name.clone(), val);
+                self.env.borrow_mut().assign(name.clone(), val)?;
                 Ok(None)
             }
 
