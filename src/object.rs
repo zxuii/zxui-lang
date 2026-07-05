@@ -6,6 +6,7 @@ use crate::{ast::Stmt, environment::Environment};
 pub enum Value {
     Null,
     Number(f64),
+    String(String),
     Function {
         name: String,
         params: Vec<String>,
@@ -24,6 +25,7 @@ impl std::fmt::Display for Value {
         match self {
             Value::Null => write!(f, "null"),
             Value::Number(num) => write!(f, "{}", num),
+            Value::String(str) => write!(f, "{}", str),
             Value::Function { name, params: _, body: _, closure: _ } => write!(f, "[fun {name}]"),
             Value::NativeFunction { name, .. } => write!(f, "[native fun {name}]"),
         }
@@ -35,6 +37,7 @@ impl std::fmt::Debug for Value {
         match self {
             Value::Null => write!(f, "null"),
             Value::Number(num) => write!(f, "{}", num),
+            Value::String(str) => write!(f, "{}", str),
             Value::Function { name, params: _, body: _, closure: _ } => write!(f, "[fun {name}]"),
             Value::NativeFunction { name, .. } => write!(f, "[native fun {name}]"),
         }
