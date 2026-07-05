@@ -17,6 +17,13 @@ impl Environment {
         }
     }
 
+    pub fn new_enclosing(enclosing: Option<Rc<RefCell<Environment>>>) -> Self {
+        Self {
+            enclosing,
+            values: HashMap::new(),
+        }
+    }
+
     pub fn define(&mut self, name: String, value: Object) {
         self.values.insert(name, value);
     }
