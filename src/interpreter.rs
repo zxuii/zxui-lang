@@ -125,18 +125,17 @@ impl Interpreter {
 
             Expr::LogicalOp { left, op, right } => {
                 let l = self.eval_expr(left)?;
+                match (op, &l) {
+                    (LogicalOp::Or, Value::Boolean(true)) => return Ok(Value::Boolean(true)),
+                    (LogicalOp::And, Value::Boolean(false)) => return Ok(Value::Boolean(false)),
+                    _ => {}
+                }
                 let r = self.eval_expr(right)?;
                 match (l, r) {
-                    (Value::Boolean(a), Value::Boolean(b)) => {
-                        let result = match op {
-                            LogicalOp::Or => a || b,
-                            LogicalOp::And => a && b,
-                        };
-                        Ok(Value::Boolean(result))
-                    }
+                    (Value::Boolean(_), Value::Boolean(b)) => Ok(Value::Boolean(b)),
                     _ => Err("logical operation on non-boolean".into()),
                 }
-            }            
+            }   
 
             Expr::Call { callee, args } => {
                 let fun = self.env.borrow_mut().get(callee.clone())?;
