@@ -46,7 +46,8 @@ impl Interpreter {
                 match (op, val) {
                     (UnaryOp::Plus, Value::Number(num)) => Ok(Value::Number(num)),
                     (UnaryOp::Minus, Value::Number(num)) => Ok(Value::Number(-num)),
-                    _ => Err("Unary op on non-number".into()),
+                    (UnaryOp::Not, Value::Boolean(num)) => Ok(Value::Boolean(!num)),
+                    _ => Err("unary operation on unsupported type.".into()),
                 }
             }
             Expr::BinOp { left, op, right } => {
