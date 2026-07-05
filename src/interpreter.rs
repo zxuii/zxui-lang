@@ -12,7 +12,13 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         Self {
-            env: Rc::new(RefCell::new(Environment::new()))
+            env: Rc::new(RefCell::new(Environment::new())),
+        }
+    }
+
+    pub fn new_env(env: Rc<RefCell<Environment>>) -> Self {
+        Self {
+            env,
         }
     }
 
@@ -53,7 +59,42 @@ impl Interpreter {
             }
 
             Expr::Call { callee, args} => {
-                todo!()
+                let fun = self.env.borrow_mut().get(callee.clone())?;
+
+                let evaluated_args: Result<Vec<Value>, String> = args.iter().map(|arg| self.eval_expr(arg)).collect();
+                let evaluated_args = evaluated_args?; // entah kenapa ga ke infer, jadi gini aja :V
+
+                match fun {
+                    Value::Function { params, body, closure } => {
+                        if evaluated_args.len() != params.len() {
+                            return Err(format!(
+                                "function '{}' expects {} args but got {}",
+                                callee, params.len(), evaluated_args.len()
+                            ));
+                        }
+
+                        let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(Rc::clone(&closure)))));
+                        for (param, arg) in params.iter().zip(evaluated_args) {
+                            call_env.borrow_mut().define(param.clone(), arg);
+                        }
+
+                        let mut interp = Interpreter::new_env(call_env);
+                        let mut return_val = Value::Null;
+                        for stmt in &body {
+                            match interp.exec_stmt(stmt)? {
+                                Some(val) => {
+                                    return_val = val;
+                                    break;
+                                }
+                                None => {}
+                            }
+                        }
+
+                        Ok(return_val)
+                    }
+
+                    _ => Err(format!("'{callee}' is not a function."))
+                }
             }
         }
     }
@@ -106,7 +147,15 @@ impl Interpreter {
                 Ok(Some(val))
             }
 
-            Stmt::FunDecl { name, params, body } => todo!()
+            Stmt::FunDecl { name, params, body } => {
+                let fun = Value::Function {
+                    params: params.clone(),
+                    body: body.clone(),
+                    closure: Rc::clone(&self.env),
+                };
+                self.env.borrow_mut().define(name.clone(), fun);
+                Ok(None)
+            }
 
         }
     }

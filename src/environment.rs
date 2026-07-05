@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub struct Environment {
     pub enclosing: Option<Rc<RefCell<Environment>>>,
     values: HashMap<String, Value>,
