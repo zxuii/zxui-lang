@@ -161,18 +161,6 @@ impl Parser {
         Ok(Stmt::FunDecl { name, params, body })
     }
 
-    fn parse_fun_call(&mut self) -> Result<Expr, String> {
-        let name = match &self.ct.as_ref().unwrap().ty {
-            TokenType::Identifier(n) => n.clone(),
-            _ => return self.error(None, Some(vec![TokenType::Identifier(String::new())])),
-        };
-        self.consume(TokenType::Identifier(name.clone()))?;
-        self.consume(TokenType::Lparen)?;
-        let args = self.parse_args()?;
-        self.consume(TokenType::Rparen)?;
-        Ok(Expr::Call { callee: name, args })
-    }
-
     fn parse_args(&mut self) -> Result<Vec<Expr>, String> {
         let mut args = vec![];
         if self.ct.as_ref().unwrap().ty != TokenType::Rparen {
@@ -370,6 +358,22 @@ impl Parser {
     }
 
     fn parse_factor(&mut self) -> Result<Expr, String> {
+        let mut expr = self.parse_primary()?;
+
+        while self.ct.as_ref().unwrap().ty == TokenType::Lparen {
+            self.consume(TokenType::Lparen)?;
+            let args = self.parse_args()?;
+            self.consume(TokenType::Rparen)?;
+            expr = Expr::Call {
+                callee: Box::new(expr),
+                args,
+            };
+        }
+
+        Ok(expr)
+    }
+
+    fn parse_primary(&mut self) -> Result<Expr, String> {
         match self.ct.as_ref().unwrap().ty.clone() {
             TokenType::Plus => {
                 self.consume(TokenType::Plus)?;
@@ -419,11 +423,6 @@ impl Parser {
                 Ok(node)
             }
             TokenType::Identifier(name) => {
-                if let Some(next_tok) = self.peek() {
-                    if next_tok.ty == TokenType::Lparen {
-                        return self.parse_fun_call();
-                    }
-                }
                 self.consume(TokenType::Identifier(name.clone()))?;
                 Ok(Expr::Identifier(name))
             }
@@ -434,6 +433,7 @@ impl Parser {
                     TokenType::Minus,
                     TokenType::Bang,
                     TokenType::Number(0.0),
+                    TokenType::String("".to_string()),
                     TokenType::Lparen,
                     TokenType::Lbrace,
                     TokenType::Fun,

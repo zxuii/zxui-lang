@@ -138,31 +138,23 @@ impl Interpreter {
             }   
 
             Expr::Call { callee, args } => {
-                let fun = self.env.borrow().get(callee.clone())?;
+                let fun = self.eval_expr(callee)?;
 
                 let evaluated_args: Result<Vec<Value>, String> =
                     args.iter().map(|arg| self.eval_expr(arg)).collect();
-                let evaluated_args = evaluated_args?; // entah kenapa ga ke infer, jadi gini aja :V
+                let evaluated_args = evaluated_args?;
 
                 match fun {
-                    Value::Function {
-                        name: _,
-                        params,
-                        body,
-                        closure,
-                    } => {
+                    Value::Function { name: _, params, body, closure } => {
                         if evaluated_args.len() != params.len() {
                             return Err(format!(
-                                "function '{}' expects {} args but got {}",
-                                callee,
+                                "function expects {} args but got {}",
                                 params.len(),
                                 evaluated_args.len()
                             ));
                         }
 
-                        let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(
-                            Rc::clone(&closure),
-                        ))));
+                        let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(Rc::clone(&closure)))));
                         for (param, arg) in params.iter().zip(evaluated_args) {
                             call_env.borrow_mut().define(param.clone(), arg);
                         }
@@ -170,31 +162,25 @@ impl Interpreter {
                         let mut interp = Interpreter::new_env(call_env);
                         let mut return_val = Value::Null;
                         for stmt in &body {
-                            match interp.exec_stmt(stmt)? {
-                                Some(val) => {
-                                    return_val = val;
-                                    break;
-                                }
-                                None => {}
+                            if let Some(val) = interp.exec_stmt(stmt)? {
+                                return_val = val;
+                                break;
                             }
                         }
-
                         Ok(return_val)
                     }
 
-                    Value::NativeFunction { name, fun, arity } => {
+                    Value::NativeFunction { fun, arity, name } => {
                         if arity != -1 && evaluated_args.len() != arity as usize {
                             return Err(format!(
                                 "function '{}' expects {} args but got {}",
-                                name,
-                                arity,
-                                evaluated_args.len()
+                                name, arity, evaluated_args.len()
                             ));
                         }
                         fun(evaluated_args)
                     }
 
-                    _ => Err(format!("'{callee}' is not a function.")),
+                    _ => Err("attempted to call a non-function value".into()),
                 }
             }
         }

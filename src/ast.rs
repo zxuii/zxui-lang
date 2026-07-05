@@ -25,7 +25,7 @@ pub enum Expr {
         right: Box<Expr>
     },
     Call {
-        callee: String,
+        callee: Box<Expr>,
         args: Vec<Expr>,
     },
     NoOp,
