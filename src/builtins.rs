@@ -30,5 +30,7 @@ pub fn native_readline(args: Vec<Value>) -> Result<Value, String> {
     io::stdout().flush().expect("Failed to flush stdout");
     io::stdin().read_line(&mut input).expect("Failed to readline");
 
-    Ok(Value::String(input))
+    let trimmed = input.trim_end_matches(['\n', '\r']).to_string();
+
+    Ok(Value::String(trimmed))
 }
