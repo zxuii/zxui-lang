@@ -5,6 +5,7 @@ mod parser;
 mod object;
 mod environment;
 mod interpreter;
+mod builtins;
 
 use lexer::Lexer;
 use interpreter::Interpreter;
@@ -19,16 +20,16 @@ fn main() {
             Ok(f) => {
                 let mut lex = Lexer::new(f.clone());
                 lex.tokenize();
-                for t in &lex.tokens {
-                    println!("{}", t);
-                }
+                // for t in &lex.tokens {
+                //     println!("{}", t);
+                // }
 
                 match Parser::new(f, lex.tokens).parse() {
                     Ok(stmt) => {
-                        println!("{:#?}", stmt);
+                        // println!("{:#?}", stmt);
                         match Interpreter::new().exec_stmt(&stmt) {
-                            Ok(result) => {
-                                println!("{:?}", result.unwrap_or(object::Value::Null) );
+                            Ok(_) => {
+                                // println!("{:?}", result.unwrap_or(object::Value::Null) );
                             }
 
                             Err(e) => eprintln!("Runtime Error: {e}")
