@@ -60,4 +60,191 @@ tapi ya setidaknya totally working:
 55555
 ```
 
-Oke, jadi tujuan sekarang sudah jelas, tinggal eksekusi aja. see ya!
+## Update
+
+Nah sekarang aku udah nulis binding untuk rustnya, ya keliatannya sih seperti ini saat menjalankan example.zxui:
+
+```bash
+./zxui-lang .\example.zxui
+program at 1:1
+fun at 1:1
+identifier(caller) at 1:5
+( at 1:11
+identifier(name) at 1:12
+) at 1:16
+{ at 1:18
+fun at 2:5
+identifier(things) at 2:9
+( at 2:15
+) at 2:16
+{ at 2:18
+identifier(println) at 3:9
+( at 3:16
+identifier(name) at 3:17
+) at 3:21
+; at 3:22
+} at 4:5
+return at 5:5
+identifier(things) at 5:12
+; at 5:18
+} at 6:1
+fun at 8:1
+identifier(tambah) at 8:5
+( at 8:11
+identifier(a) at 8:12
+, at 8:13
+identifier(b) at 8:15
+) at 8:16
+{ at 8:18
+return at 9:5
+identifier(a) at 9:12
++ at 9:14
+identifier(b) at 9:16
+; at 9:17
+} at 10:1
+let at 12:1
+identifier(x) at 12:5
+= at 12:7
+identifier(tambah) at 12:9
+( at 12:15
+number(1) at 12:12
+, at 12:17
+number(5) at 12:12
+) at 12:20
+; at 12:21
+identifier(print) at 14:1
+( at 14:6
+identifier(x) at 14:7
++ at 14:9
+number(5.2) at 14:14
+) at 14:14
+; at 14:15
+identifier(println) at 15:1
+( at 15:8
+) at 15:9
+; at 15:10
+let at 17:1
+identifier(c) at 17:5
+= at 17:7
+identifier(caller) at 17:9
+( at 17:15
+number(55555) at 17:17
+) at 17:21
+; at 17:22
+let at 18:1
+identifier(call) at 18:5
+= at 18:10
+identifier(c) at 18:12
+( at 18:13
+) at 18:14
+eof at 19:1
+Program(
+    [
+        FunDecl {
+            name: "caller",
+            params: [
+                "name",
+            ],
+            body: [
+                FunDecl {
+                    name: "things",
+                    params: [],
+                    body: [
+                        ExprStmt(
+                            Call {
+                                callee: "println",
+                                args: [
+                                    Identifier(
+                                        "name",
+                                    ),
+                                ],
+                            },
+                        ),
+                    ],
+                },
+                Return(
+                    Identifier(
+                        "things",
+                    ),
+                ),
+            ],
+        },
+        FunDecl {
+            name: "tambah",
+            params: [
+                "a",
+                "b",
+            ],
+            body: [
+                Return(
+                    BinOp {
+                        left: Identifier(
+                            "a",
+                        ),
+                        op: Plus,
+                        right: Identifier(
+                            "b",
+                        ),
+                    },
+                ),
+            ],
+        },
+        Let {
+            name: "x",
+            expr: Call {
+                callee: "tambah",
+                args: [
+                    Number(
+                        1.0,
+                    ),
+                    Number(
+                        5.0,
+                    ),
+                ],
+            },
+        },
+        ExprStmt(
+            Call {
+                callee: "print",
+                args: [
+                    BinOp {
+                        left: Identifier(
+                            "x",
+                        ),
+                        op: Plus,
+                        right: Number(
+                            5.2,
+                        ),
+                    },
+                ],
+            },
+        ),
+        ExprStmt(
+            Call {
+                callee: "println",
+                args: [],
+            },
+        ),
+        Let {
+            name: "c",
+            expr: Call {
+                callee: "caller",
+                args: [
+                    Number(
+                        55555.0,
+                    ),
+                ],
+            },
+        },
+        Let {
+            name: "call",
+            expr: Call {
+                callee: "c",
+                args: [],
+            },
+        },
+    ],
+)
+```
+
+Aku berharap kalau proyek ini akan terus berlanjut hahahaha
