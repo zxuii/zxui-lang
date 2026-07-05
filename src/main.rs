@@ -1,5 +1,7 @@
 mod lexer;
 mod tokens;
+mod ast;
+mod parser;
 
 use lexer::Lexer;
 use std::{env, fs::read_to_string, process::exit};
@@ -12,9 +14,12 @@ fn main() {
             Ok(f) => {
                 let mut lex = Lexer::new(f);
                 lex.tokenize();
-                for t in lex.tokens {
+                for t in &lex.tokens {
                     println!("{}", t);
                 }
+
+                let mut parse = parser::Parser::new(lex.tokens);
+                println!("{:#?}", parse.parse().expect("Parse Error"));
             }
 
             Err(e) => {

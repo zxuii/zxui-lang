@@ -1,3 +1,4 @@
+#[derive(PartialEq, Clone)]
 pub enum TokenType {
     Identifier(String),
     Number(f64),
@@ -44,6 +45,7 @@ impl std::fmt::Display for TokenType {
     }
 }
 
+#[derive(Clone)]
 pub struct Token {
     pub ty: TokenType,
     pub line: usize,
