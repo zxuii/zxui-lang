@@ -91,7 +91,36 @@ impl Lexer {
             self.add_token_advance(TokenType::Comma);
             Ok(())
         } else if self.ch == Some('=') {
-            self.add_token_advance(TokenType::Equal);
+            if self.peek() == Some('=') {
+                self.add_token(TokenType::EqEq, self.line, self.col);
+                self.advance(); self.advance();
+            } else {
+                self.add_token_advance(TokenType::Equal);
+            }
+            Ok(())
+        } else if self.ch == Some('<') {
+            if self.peek() == Some('=') {
+                self.add_token(TokenType::LtEq, self.line, self.col);
+                self.advance(); self.advance();
+            } else {
+                self.add_token_advance(TokenType::Lt);
+            }
+            Ok(())
+        } else if self.ch == Some('>') {
+            if self.peek() == Some('=') {
+                self.add_token(TokenType::GtEq, self.line, self.col);
+                self.advance(); self.advance();
+            } else {
+                self.add_token_advance(TokenType::Gt);
+            }
+            Ok(())
+        } else if self.ch == Some('!') {
+            if self.peek() == Some('=') {
+                self.add_token(TokenType::BangEq, self.line, self.col);
+                self.advance(); self.advance();
+            } else {
+                self.add_token_advance(TokenType::Bang);
+            }
             Ok(())
         } else if self.is_alpha() {
             self.parse_ident_or_key();
