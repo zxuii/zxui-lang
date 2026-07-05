@@ -99,7 +99,7 @@ impl Lexer {
         } else {
             let mut c = String::new();
             if self.ch.is_none() {
-                c.push_str("something");
+                c.push_str("unknown");
             } else {
                 c.push(self.ch.unwrap())
             }
