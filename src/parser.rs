@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, CompOp, Expr, Stmt, UnaryOp};
+use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, UnaryOp};
 use crate::tokens::{Token, TokenType};
 
 pub struct Parser {
@@ -237,71 +237,81 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Result<Expr, String> {
-        let mut node = self.parse_term()?;
+        let mut node = self.parse_logical_and()?;
+        
+        while matches!(self.ct.as_ref().unwrap().ty, TokenType::Or) {
+            self.consume(TokenType::Or)?;
+            node = Expr::LogicalOp {
+                left: Box::new(node),
+                op: LogicalOp::Or,
+                right: Box::new(self.parse_logical_and()?),
+            };
+        }
+        Ok(node)
+    }
+
+    fn parse_logical_and(&mut self) -> Result<Expr, String> {
+        let mut node = self.parse_comparison()?;
+        
+        while matches!(self.ct.as_ref().unwrap().ty, TokenType::And) {
+            self.consume(TokenType::And)?;
+            node = Expr::LogicalOp {
+                left: Box::new(node),
+                op: LogicalOp::And,
+                right: Box::new(self.parse_comparison()?),
+            };
+        }
+        Ok(node)
+    }
+
+    fn parse_comparison(&mut self) -> Result<Expr, String> {
+        let mut node = self.parse_additive()?;
+        
         while matches!(
             self.ct.as_ref().unwrap().ty,
-            TokenType::Plus | TokenType::Minus | TokenType::Lt |
-            TokenType::Gt | TokenType::LtEq | TokenType::GtEq |
-            TokenType::EqEq | TokenType::BangEq
+            TokenType::Lt | TokenType::Gt | TokenType::LtEq | 
+            TokenType::GtEq | TokenType::EqEq | TokenType::BangEq
         ) {
             let op = self.ct.as_ref().unwrap().ty.clone();
-            if op == TokenType::Plus {
-                self.consume(TokenType::Plus)?;
-                node = Expr::BinOp {
-                    left: Box::new(node),
-                    op: BinOp::Plus,
-                    right: Box::new(self.parse_term()?),
-                };
-            } else if op == TokenType::Minus {
-                self.consume(TokenType::Minus)?;
-                node = Expr::BinOp {
-                    left: Box::new(node),
-                    op: BinOp::Minus,
-                    right: Box::new(self.parse_term()?),
-                };
-            } else if op == TokenType::Lt {
-                self.consume(TokenType::Lt)?;
-                node = Expr::CompOp {
-                    left: Box::new(node),
-                    op: CompOp::Lt,
-                    right: Box::new(self.parse_term()?),
-                };
-            } else if op == TokenType::Gt {
-                self.consume(TokenType::Gt)?;
-                node = Expr::CompOp {
-                    left: Box::new(node),
-                    op: CompOp::Gt,
-                    right: Box::new(self.parse_term()?),
-                };
-            } else if op == TokenType::LtEq {
-                self.consume(TokenType::LtEq)?;
-                node = Expr::CompOp {
-                    left: Box::new(node),
-                    op: CompOp::LtEq,
-                    right: Box::new(self.parse_term()?),
-                };
-            } else if op == TokenType::GtEq {
-                self.consume(TokenType::GtEq)?;
-                node = Expr::CompOp {
-                    left: Box::new(node),
-                    op: CompOp::GtEq,
-                    right: Box::new(self.parse_term()?),
-                };
-            } else if op == TokenType::EqEq {
-                self.consume(TokenType::EqEq)?;
-                node = Expr::CompOp {
-                    left: Box::new(node),
-                    op: CompOp::EqEq,
-                    right: Box::new(self.parse_term()?),
-                };
-            } else if op == TokenType::BangEq {
-                self.consume(TokenType::BangEq)?;
-                node = Expr::CompOp {
-                    left: Box::new(node),
-                    op: CompOp::NotEq,
-                    right: Box::new(self.parse_term()?),
-                };
-            }
+            self.consume(op.clone())?;
+            
+            let comp_op = match op {
+                TokenType::Lt => CompOp::Lt,
+                TokenType::Gt => CompOp::Gt,
+                TokenType::LtEq => CompOp::LtEq,
+                TokenType::GtEq => CompOp::GtEq,
+                TokenType::EqEq => CompOp::EqEq,
+                TokenType::BangEq => CompOp::NotEq,
+                _ => unreachable!(),
+            };
+
+            node = Expr::CompOp {
+                left: Box::new(node),
+                op: comp_op,
+                right: Box::new(self.parse_additive()?),
+            };
+        }
+        Ok(node)
+    }
+
+    fn parse_additive(&mut self) -> Result<Expr, String> {
+        let mut node = self.parse_term()?;
+        
+        while matches!(self.ct.as_ref().unwrap().ty, TokenType::Plus | TokenType::Minus) {
+            let op = self.ct.as_ref().unwrap().ty.clone();
+            self.consume(op.clone())?;
+            
+            let bin_op = match op {
+                TokenType::Plus => BinOp::Plus,
+                TokenType::Minus => BinOp::Minus,
+                _ => unreachable!(),
+            };
+
+            node = Expr::BinOp {
+                left: Box::new(node),
+                op: bin_op,
+                right: Box::new(self.parse_term()?),
+            };
         }
         Ok(node)
     }

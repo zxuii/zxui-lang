@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, CompOp, Expr, Stmt, UnaryOp};
+use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, UnaryOp};
 use crate::environment::Environment;
 use crate::object::Value;
 use crate::builtins::*;
@@ -113,6 +113,21 @@ impl Interpreter {
                     _ => Err("comparison operation on unsupported type".into())
                 }
             }
+
+            Expr::LogicalOp { left, op, right } => {
+                let l = self.eval_expr(left)?;
+                let r = self.eval_expr(right)?;
+                match (l, r) {
+                    (Value::Boolean(a), Value::Boolean(b)) => {
+                        let result = match op {
+                            LogicalOp::Or => a || b,
+                            LogicalOp::And => a && b,
+                        };
+                        Ok(Value::Boolean(result))
+                    }
+                    _ => Err("logical operation on non-boolean".into()),
+                }
+            }            
 
             Expr::Call { callee, args } => {
                 let fun = self.env.borrow_mut().get(callee.clone())?;
