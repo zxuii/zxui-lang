@@ -102,8 +102,8 @@ impl Interpreter {
             }
 
             Stmt::ExprStmt(expr) => {
-                self.eval_expr(expr)?;
-                Ok(None)
+                let val = self.eval_expr(expr)?;
+                Ok(Some(val))
             }
 
             Stmt::FunDecl { name, params, body } => todo!()

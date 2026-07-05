@@ -7,6 +7,8 @@ mod environment;
 mod interpreter;
 
 use lexer::Lexer;
+use interpreter::Interpreter;
+use parser::Parser;
 use std::{env, fs::read_to_string, process::exit};
 
 fn main() {
@@ -21,9 +23,18 @@ fn main() {
                     println!("{}", t);
                 }
 
-                let parse = parser::Parser::new(f, lex.tokens).parse();
-                match parse {
-                    Ok(stmt) => println!("{:#?}", stmt),
+                match Parser::new(f, lex.tokens).parse() {
+                    Ok(stmt) => {
+                        println!("{:#?}", stmt);
+                        match Interpreter::new().exec_stmt(&stmt) {
+                            Ok(result) => {
+                                println!("{:?}", result.unwrap_or(object::Object::Null) );
+                            }
+
+                            Err(e) => eprintln!("Runtime Error: {e}")
+                        }
+
+                    },
                     Err(e) => eprintln!("Parse Error: {e}")
                 }
                 // println!("{:#?}", parse.parse().expect("Parse Error"));
