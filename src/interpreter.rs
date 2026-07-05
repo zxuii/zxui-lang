@@ -1,19 +1,24 @@
 use crate::ast::{BinOp, Expr, Stmt, UnaryOp};
 use crate::environment::Environment;
 use crate::object::Value;
+use crate::builtins::*;
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct Interpreter {
-    env: Rc<RefCell<Environment>>
+    env: Rc<RefCell<Environment>>,
 }
+
+
 
 impl Interpreter {
     pub fn new() -> Self {
-        Self {
+        let mut interp = Self {
             env: Rc::new(RefCell::new(Environment::new())),
-        }
+        };
+        interp.define_natives();
+        interp
     }
 
     pub fn new_env(env: Rc<RefCell<Environment>>) -> Self {
@@ -22,20 +27,23 @@ impl Interpreter {
         }
     }
 
+    fn define_natives(&mut self) {
+        self.env.borrow_mut().define("println".to_string(), Value::native_fun("println".to_string(), -1, Rc::new(native_println)));
+        self.env.borrow_mut().define("print".to_string(), Value::native_fun("print".to_string(), -1, Rc::new(native_print)));
+    }
+
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
         match expr {
             Expr::Number(num) => Ok(Value::Number(*num)),
             Expr::Null => Ok(Value::Null),
             Expr::NoOp => Ok(Value::Null),
-            Expr::Identifier(name) => {
-                self.env.borrow().get(name.clone())
-            }
+            Expr::Identifier(name) => self.env.borrow().get(name.clone()),
             Expr::Unary { op, expr } => {
                 let val = self.eval_expr(expr)?;
                 match (op, val) {
                     (UnaryOp::Plus, Value::Number(num)) => Ok(Value::Number(num)),
                     (UnaryOp::Minus, Value::Number(num)) => Ok(Value::Number(-num)),
-                    _ => Err("Unary op on non-number".into()),   
+                    _ => Err("Unary op on non-number".into()),
                 }
             }
             Expr::BinOp { left, op, right } => {
@@ -48,32 +56,44 @@ impl Interpreter {
                             BinOp::Minus => a - b,
                             BinOp::Multiply => a * b,
                             BinOp::Divide => {
-                                if b == 0.0 { return Err("Division by zero".into())}
+                                if b == 0.0 {
+                                    return Err("Division by zero".into());
+                                }
                                 a / b
-                            },
+                            }
                         };
                         Ok(Value::Number(result))
                     }
-                    _ => Err("Binary operation on non-numbers".into())
+                    _ => Err("Binary operation on non-numbers".into()),
                 }
             }
 
-            Expr::Call { callee, args} => {
+            Expr::Call { callee, args } => {
                 let fun = self.env.borrow_mut().get(callee.clone())?;
 
-                let evaluated_args: Result<Vec<Value>, String> = args.iter().map(|arg| self.eval_expr(arg)).collect();
+                let evaluated_args: Result<Vec<Value>, String> =
+                    args.iter().map(|arg| self.eval_expr(arg)).collect();
                 let evaluated_args = evaluated_args?; // entah kenapa ga ke infer, jadi gini aja :V
 
                 match fun {
-                    Value::Function { params, body, closure } => {
+                    Value::Function {
+                        name: _,
+                        params,
+                        body,
+                        closure,
+                    } => {
                         if evaluated_args.len() != params.len() {
                             return Err(format!(
                                 "function '{}' expects {} args but got {}",
-                                callee, params.len(), evaluated_args.len()
+                                callee,
+                                params.len(),
+                                evaluated_args.len()
                             ));
                         }
 
-                        let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(Rc::clone(&closure)))));
+                        let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(
+                            Rc::clone(&closure),
+                        ))));
                         for (param, arg) in params.iter().zip(evaluated_args) {
                             call_env.borrow_mut().define(param.clone(), arg);
                         }
@@ -93,7 +113,19 @@ impl Interpreter {
                         Ok(return_val)
                     }
 
-                    _ => Err(format!("'{callee}' is not a function."))
+                    Value::NativeFunction { fun, arity, name } => {
+                        if arity != -1 && evaluated_args.len() != arity as usize {
+                            return Err(format!(
+                                "function '{}' expects {} args but got {}",
+                                name,
+                                arity,
+                                evaluated_args.len()
+                            ));
+                        }
+                        fun(evaluated_args)
+                    }
+
+                    _ => Err(format!("'{callee}' is not a function.")),
                 }
             }
         }
@@ -105,11 +137,13 @@ impl Interpreter {
                 let mut ret = None;
                 for stmt in stmts {
                     ret = self.exec_stmt(stmt)?;
-                    if ret.is_some() { break; }
+                    if ret.is_some() {
+                        break;
+                    }
                 }
                 Ok(ret)
             }
-            
+
             Stmt::Block(stmts) => {
                 let child = Environment::new_enclosing(Some(Rc::clone(&self.env)));
                 let prev = Rc::clone(&self.env);
@@ -118,7 +152,9 @@ impl Interpreter {
                 let mut ret = None;
                 for stmt in stmts {
                     ret = self.exec_stmt(stmt)?;
-                    if ret.is_some() { break; }
+                    if ret.is_some() {
+                        break;
+                    }
                 }
 
                 self.env = prev;
@@ -143,12 +179,13 @@ impl Interpreter {
             }
 
             Stmt::ExprStmt(expr) => {
-                let val = self.eval_expr(expr)?;
-                Ok(Some(val))
+                self.eval_expr(expr)?;
+                Ok(None)
             }
 
             Stmt::FunDecl { name, params, body } => {
                 let fun = Value::Function {
+                    name: name.clone(),
                     params: params.clone(),
                     body: body.clone(),
                     closure: Rc::clone(&self.env),
@@ -156,7 +193,6 @@ impl Interpreter {
                 self.env.borrow_mut().define(name.clone(), fun);
                 Ok(None)
             }
-
         }
     }
 }
