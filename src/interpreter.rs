@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, Expr, Stmt, UnaryOp};
+use crate::ast::{BinOp, CompOp, Expr, Stmt, UnaryOp};
 use crate::environment::Environment;
 use crate::object::Value;
 use crate::builtins::*;
@@ -60,14 +60,56 @@ impl Interpreter {
                             BinOp::Multiply => a * b,
                             BinOp::Divide => {
                                 if b == 0.0 {
-                                    return Err("Division by zero".into());
+                                    return Err("division by zero".into());
                                 }
                                 a / b
                             }
                         };
                         Ok(Value::Number(result))
                     }
-                    _ => Err("Binary operation on non-numbers".into()),
+                    _ => Err("binary operation on non-numbers".into()),
+                }
+            }
+
+            Expr::CompOp { left, op, right } => {
+                let l = self.eval_expr(left)?;
+                let r = self.eval_expr(right)?;
+                match (l, r) {
+                    (Value::Number(a), Value::Number(b)) => {
+                        let result = match op {
+                            CompOp::Lt => a < b,
+                            CompOp::Gt => a > b,
+                            CompOp::LtEq => a <= b,
+                            CompOp::GtEq => a >= b,
+                            CompOp::EqEq => a == b,
+                            CompOp::NotEq => a != b,
+                        };
+                        Ok(Value::Boolean(result))
+                    }
+                    (Value::Boolean(a), Value::Boolean(b)) => {
+                        let result = match op {
+                            CompOp::Lt => a < b,
+                            CompOp::Gt => a > b,
+                            CompOp::LtEq => a <= b,
+                            CompOp::GtEq => a >= b,
+                            CompOp::EqEq => a == b,
+                            CompOp::NotEq => a != b,
+                        };
+                        Ok(Value::Boolean(result))
+                    }
+                    (Value::String(a), Value::String(b)) => {
+                        let result = match op {
+                            CompOp::Lt => a < b,
+                            CompOp::Gt => a > b,
+                            CompOp::LtEq => a <= b,
+                            CompOp::GtEq => a >= b,
+                            CompOp::EqEq => a == b,
+                            CompOp::NotEq => a != b,
+                        };
+                        Ok(Value::Boolean(result))
+                    }
+
+                    _ => Err("comparison operation on unsupported type".into())
                 }
             }
 
@@ -131,8 +173,6 @@ impl Interpreter {
                     _ => Err(format!("'{callee}' is not a function.")),
                 }
             }
-
-            _ => todo!()
         }
     }
 
