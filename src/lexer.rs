@@ -231,6 +231,8 @@ impl Lexer {
             "fun" => TokenType::Fun,
             "return" => TokenType::Return,
             "null" => TokenType::Null,
+            "true" => TokenType::True,
+            "false" => TokenType::False,
             _ => TokenType::Identifier(ident.clone()),
         };
         self.add_token(ty, start_line, start_col)

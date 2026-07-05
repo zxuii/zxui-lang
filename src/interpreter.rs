@@ -37,6 +37,7 @@ impl Interpreter {
         match expr {
             Expr::Number(num) => Ok(Value::Number(*num)),
             Expr::String(str) => Ok(Value::String(str.clone())),
+            Expr::Boolean(b) => Ok(Value::Boolean(*b)),
             Expr::Null => Ok(Value::Null),
             Expr::NoOp => Ok(Value::Null),
             Expr::Identifier(name) => self.env.borrow().get(name.clone()),

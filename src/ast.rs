@@ -3,6 +3,7 @@ pub enum Expr {
     Identifier(String),
     Number(f64),
     String(String),
+    Boolean(bool),
     Null,
     Unary {
         op: UnaryOp,

@@ -316,6 +316,14 @@ impl Parser {
                 self.consume(TokenType::Null)?;
                 Ok(Expr::Null)
             }
+            TokenType::True => {
+                self.consume(TokenType::True)?;
+                Ok(Expr::Boolean(true))
+            }
+            TokenType::False => {
+                self.consume(TokenType::False)?;
+                Ok(Expr::Boolean(false))
+            }
             TokenType::Lparen => {
                 self.consume(TokenType::Lparen)?;
                 let node = self.parse_expr()?;

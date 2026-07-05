@@ -3,6 +3,8 @@ pub enum TokenType {
     Identifier(String),
     Number(f64),
     String(String),
+    True,
+    False,
     Null,
     Let,
     Fun,
@@ -28,6 +30,8 @@ impl std::fmt::Display for TokenType {
             TokenType::Identifier(_) => { write!(f, "identifier") }
             TokenType::Number(_) => { write!(f, "number")}
             TokenType::String(_) => { write!(f, "string") }
+            TokenType::True => { write!(f, "true") }
+            TokenType::False => { write!(f, "false") }
             TokenType::Null => { write!(f, "null")}
             TokenType::Let => { write!(f, "let") }
             TokenType::Fun => { write!(f, "fun") }
