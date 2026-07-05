@@ -192,33 +192,37 @@ impl Interpreter {
         }
     }
 
+    fn exec_stmts(&mut self, stmts: &[Stmt]) -> Result<Option<Value>, String> {
+        let mut ret = None;
+            for stmt in stmts {
+                ret = self.exec_stmt(stmt)?;
+                if ret.is_some() {
+                    break;
+                }
+            }
+        Ok(ret)
+    }
+
+    fn exec_block(&mut self, stmts: &[Stmt]) -> Result<Option<Value>, String> {
+        let child = Environment::new_enclosing(Some(Rc::clone(&self.env)));
+        let prev = Rc::clone(&self.env);
+        self.env = Rc::new(RefCell::new(child));
+
+        let ret = self.exec_stmts(stmts)?;
+
+        self.env = prev;
+        Ok(ret)
+    }
+
     pub fn exec_stmt(&mut self, stmt: &Stmt) -> Result<Option<Value>, String> {
         match stmt {
             Stmt::Program(stmts) => {
-                let mut ret = None;
-                for stmt in stmts {
-                    ret = self.exec_stmt(stmt)?;
-                    if ret.is_some() {
-                        break;
-                    }
-                }
+                let ret = self.exec_stmts(stmts)?;
                 Ok(ret)
             }
 
             Stmt::Block(stmts) => {
-                let child = Environment::new_enclosing(Some(Rc::clone(&self.env)));
-                let prev = Rc::clone(&self.env);
-                self.env = Rc::new(RefCell::new(child));
-
-                let mut ret = None;
-                for stmt in stmts {
-                    ret = self.exec_stmt(stmt)?;
-                    if ret.is_some() {
-                        break;
-                    }
-                }
-
-                self.env = prev;
+                let ret = self.exec_block(stmts)?;
                 Ok(ret)
             }
 
@@ -239,13 +243,7 @@ impl Interpreter {
                 match val {
                     Value::Boolean(b) => {
                         if b {
-                            let mut ret = None;
-                            for stmt in block {
-                                ret = self.exec_stmt(stmt)?;
-                                if ret.is_some() {
-                                    break;
-                                }
-                            }
+                            let ret = self.exec_block(block)?;
                             Ok(ret)
                         } else {
                             Ok(None)
