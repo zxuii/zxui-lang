@@ -36,6 +36,7 @@ impl Interpreter {
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
         match expr {
             Expr::Number(num) => Ok(Value::Number(*num)),
+            Expr::String(str) => Ok(Value::String(str.clone())),
             Expr::Null => Ok(Value::Null),
             Expr::NoOp => Ok(Value::Null),
             Expr::Identifier(name) => self.env.borrow().get(name.clone()),

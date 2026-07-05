@@ -2,6 +2,7 @@
 pub enum TokenType {
     Identifier(String),
     Number(f64),
+    String(String),
     Null,
     Let,
     Fun,
@@ -26,6 +27,7 @@ impl std::fmt::Display for TokenType {
         match self {
             TokenType::Identifier(_) => { write!(f, "identifier") }
             TokenType::Number(_) => { write!(f, "number")}
+            TokenType::String(_) => { write!(f, "string") }
             TokenType::Null => { write!(f, "null")}
             TokenType::Let => { write!(f, "let") }
             TokenType::Fun => { write!(f, "fun") }

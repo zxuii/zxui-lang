@@ -26,7 +26,10 @@ impl Lexer {
 
     fn error(&self, e: String) {
         eprintln!("Lexer Error: {}", e);
-        eprintln!("    {}", self.code_raw.lines().nth(self.line - 1).unwrap());
+        eprintln!(
+            "    {}",
+            self.code_raw.lines().nth(self.line - 1).unwrap()
+        );
         let mut cursor = String::from("    ");
         for _ in 0..self.col - 1 {
             cursor.push(' ');
@@ -96,6 +99,9 @@ impl Lexer {
         } else if self.is_int(self.ch) {
             self.parse_number();
             Ok(())
+        } else if self.ch == Some('"') {
+            self.parse_string();
+            Ok(())
         } else {
             let mut c = String::new();
             if self.ch.is_none() {
@@ -163,7 +169,11 @@ impl Lexer {
             }
         }
 
-        self.add_token(TokenType::Number(num.parse().unwrap()), start_line, start_col);
+        self.add_token(
+            TokenType::Number(num.parse().unwrap()),
+            start_line,
+            start_col,
+        );
     }
 
     fn peek(&self) -> Option<char> {
@@ -189,6 +199,27 @@ impl Lexer {
         }
 
         ident
+    }
+
+    fn parse_string(&mut self) {
+        let start_line = self.line;
+        let start_col = self.col;
+
+        self.advance();
+        let mut str = String::new();
+        
+        while self.ch != Some('"') && self.ch != None {
+            str.push(self.ch.unwrap());
+            self.advance();
+        }
+
+        if self.ch == None {
+            self.error("unterminated string".to_string());
+        }
+
+        self.advance();
+        
+        self.add_token(TokenType::String(str), start_line, start_col);
     }
 
     fn parse_ident_or_key(&mut self) {

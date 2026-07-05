@@ -308,6 +308,10 @@ impl Parser {
                 self.consume(TokenType::Number(n))?;
                 Ok(Expr::Number(n))
             }
+            TokenType::String(str) => {
+                self.consume(TokenType::String(str.clone()))?;
+                Ok(Expr::String(str))
+            }
             TokenType::Null => {
                 self.consume(TokenType::Null)?;
                 Ok(Expr::Null)
