@@ -20,6 +20,13 @@ pub enum TokenType {
     Rbrace,
     Comma,
     Equal,
+    EqEq, // ==
+    Lt,   // <
+    Gt,   // >
+    LtEq, // <=
+    GtEq, // >=
+    Bang, // !
+    BangEq, // !=
     Eof,
     Program
 }
@@ -47,6 +54,13 @@ impl std::fmt::Display for TokenType {
             TokenType::Rbrace => { write!(f, "}}") }
             TokenType::Comma => { write!(f, ",") }
             TokenType::Equal => { write!(f, "=") }
+            TokenType::EqEq => { write!(f, "==") }
+            TokenType::Lt => { write!(f, "<") }
+            TokenType::Gt => { write!(f, ">") }
+            TokenType::LtEq => { write!(f, "<=") }
+            TokenType::GtEq => { write!(f, ">=") }
+            TokenType::Bang => { write!(f, "!") }
+            TokenType::BangEq => { write!(f, "!=") }
             TokenType::Eof => { write!(f, "eof") }
             TokenType::Program => { write!(f, "program") }
         }
