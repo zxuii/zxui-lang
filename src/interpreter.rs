@@ -182,7 +182,7 @@ impl Interpreter {
                         Ok(return_val)
                     }
 
-                    Value::NativeFunction { fun, arity, name } => {
+                    Value::NativeFunction { name, fun, arity } => {
                         if arity != -1 && evaluated_args.len() != arity as usize {
                             return Err(format!(
                                 "function '{}' expects {} args but got {}",
