@@ -10,6 +10,12 @@ sangat disarankan untuk membaca buku ini karena sangat bagus, bahasanya mudah di
 
 https://craftinginterpreters.com/the-lox-language.html#top
 
+oh dan thanks kepada repo
+
+https://github.com/jeschkies/lox-rs
+
+yang dimana telah membantuku bermigrasi dari python ke rust.
+
 nanti, video tentang pembuatan ini akan di upload setelah semua proses ini selesai di channel youtube @TelurTerbulat
 
 Work cuy!
