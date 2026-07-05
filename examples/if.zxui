@@ -7,5 +7,9 @@ fun cekPembuat(name){
         println("Aku ga kenal kamu.")
     }
 }
+
+println("=" * 20);
 let name = readline("Masukan nama: ");
+println("=" * 20);
 cekPembuat(name)
+println("=" * 20);
