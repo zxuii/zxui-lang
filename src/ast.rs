@@ -14,6 +14,11 @@ pub enum Expr {
         op: BinOp,
         right: Box<Expr>
     },
+    CompOp {
+        left: Box<Expr>,
+        op: CompOp,
+        right: Box<Expr>
+    },
     Call {
         callee: String,
         args: Vec<Expr>,
@@ -25,6 +30,17 @@ pub enum Expr {
 pub enum UnaryOp {
     Plus,
     Minus,
+    Not,
+}
+
+#[derive(Debug, Clone)]
+pub enum CompOp {
+    Lt,
+    Gt,
+    LtEq,
+    GtEq,
+    NotEq,
+    EqEq
 }
 
 #[derive(Debug, Clone)]

@@ -304,6 +304,13 @@ impl Parser {
                     expr: Box::new(self.parse_factor()?),
                 })
             }
+            TokenType::Bang => {
+                self.consume(TokenType::Bang)?;
+                Ok(Expr::Unary {
+                    op: UnaryOp::Not,
+                    expr: Box::new(self.parse_factor()?),
+                })
+            }
             TokenType::Number(n) => {
                 self.consume(TokenType::Number(n))?;
                 Ok(Expr::Number(n))
@@ -344,6 +351,7 @@ impl Parser {
                 Some(vec![
                     TokenType::Plus,
                     TokenType::Minus,
+                    TokenType::Bang,
                     TokenType::Number(0.0),
                     TokenType::Lparen,
                     TokenType::Lbrace,
