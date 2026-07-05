@@ -264,6 +264,7 @@ impl Lexer {
             "false" => TokenType::False,
             "or" => TokenType::Or,
             "and" => TokenType::And,
+            "if" => TokenType::If,
             _ => TokenType::Identifier(ident.clone()),
         };
         self.add_token(ty, start_line, start_col)

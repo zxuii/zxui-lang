@@ -1,14 +1,20 @@
 #[derive(PartialEq, Clone)]
 pub enum TokenType {
+    // Literals
     Identifier(String),
     Number(f64),
     String(String),
     True,
     False,
     Null,
+
+    // Keywords
     Let,
     Fun,
     Return,
+    If,
+
+    // Symbols
     Plus,
     Minus,
     Asterisk,
@@ -29,6 +35,8 @@ pub enum TokenType {
     BangEq, // !=
     And, // and
     Or, // or
+
+    // Specials
     Eof,
     Program
 }
@@ -45,6 +53,7 @@ impl std::fmt::Display for TokenType {
             TokenType::Let => { write!(f, "let") }
             TokenType::Fun => { write!(f, "fun") }
             TokenType::Return => { write!(f, "return") }
+            TokenType::If => { write!(f, "if") }
             TokenType::Plus => { write!(f, "+") }
             TokenType::Minus => { write!(f, "-") }
             TokenType::Asterisk => { write!(f, "*") }
