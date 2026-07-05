@@ -1,0 +1,6 @@
+fun printPerson(name) {
+    println("Hello, ", name, "!");
+}
+
+let name = readline("Masukan nama: ");
+println("Namamu: ", name);
