@@ -4,6 +4,7 @@ mod ast;
 mod parser;
 mod object;
 mod environment;
+mod interpreter;
 
 use lexer::Lexer;
 use std::{env, fs::read_to_string, process::exit};
