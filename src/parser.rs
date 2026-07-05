@@ -69,9 +69,9 @@ impl Parser {
         cursor.push('^');
 
         match &self.ct {
-            None => Err(format!("Unexpected End of File. expected '{}'", expect_str)),
+            None => Err(format!("unexpected End of File. expected '{}'", expect_str)),
             Some(tok) if tok.ty == TokenType::Eof => Err(format!(
-                "Unexpected End of File. expected '{}' at {}:{}\n{}\n{}",
+                "unexpected End of File. expected '{}' at {}:{}\n{}\n{}",
                 expect_str, tok.line, tok.col, snippet, cursor
             )),
             Some(tok) => {
@@ -79,7 +79,7 @@ impl Parser {
                     Err(format!("{} at {}:{}\n{}\n{}", m, tok.line, tok.col, snippet, cursor))
                 } else {
                     Err(format!(
-                        "Unexpected token '{}'. expected '{}' at {}:{}\n{}\n{}",
+                        "unexpected token '{}'. expected '{}' at {}:{}\n{}\n{}",
                         tok.ty, expect_str, tok.line, tok.col, snippet, cursor
                     ))
                 }
@@ -135,9 +135,10 @@ impl Parser {
                 if self.fun_counter > 0 {
                     self.parse_return()
                 } else {
-                    self.error(Some("Return statement must be inside some function."), None)
+                    self.error(Some("return statement must be inside some function."), None)
                 }
             }
+            TokenType::If => self.parse_if_decl(),
             _ => Ok(Stmt::ExprStmt(self.parse_expr()?)),
         }
     }
@@ -234,6 +235,17 @@ impl Parser {
         self.consume(TokenType::Equal)?;
         let expr = self.parse_expr()?;
         Ok(Stmt::Assign { name, expr })
+    }
+
+    fn parse_if_decl(&mut self) -> Result<Stmt, String> {
+        self.consume(TokenType::If)?;
+        self.consume(TokenType::Lparen)?;
+        let expr = self.parse_expr()?;
+        self.consume(TokenType::Rparen)?;
+        self.consume(TokenType::Lbrace)?;
+        let block = self.parse_block()?;
+        self.consume(TokenType::Rbrace)?;
+        Ok(Stmt::If { expr, block })
     }
 
     fn parse_expr(&mut self) -> Result<Expr, String> {
@@ -411,6 +423,7 @@ impl Parser {
                     TokenType::Lbrace,
                     TokenType::Fun,
                     TokenType::Let,
+                    TokenType::If,
                 ]),
             ),
         }
