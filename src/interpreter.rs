@@ -238,13 +238,13 @@ impl Interpreter {
                 Ok(None)
             }
 
-            Stmt::If { expr, block } => {
-                let val = self.eval_expr(expr)?;
-                match val {
+            Stmt::If { expr, block, else_block } => {
+                match self.eval_expr(expr)? {
                     Value::Boolean(b) => {
                         if b {
-                            let ret = self.exec_block(block)?;
-                            Ok(ret)
+                            self.exec_block(block)
+                        } else if let Some(else_stmts) = else_block {
+                            self.exec_block(else_stmts) 
                         } else {
                             Ok(None)
                         }

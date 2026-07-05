@@ -245,7 +245,22 @@ impl Parser {
         self.consume(TokenType::Lbrace)?;
         let block = self.parse_block()?;
         self.consume(TokenType::Rbrace)?;
-        Ok(Stmt::If { expr, block })
+
+        let else_block = if self.ct.as_ref().unwrap().ty == TokenType::Else {
+            self.consume(TokenType::Else)?;
+
+            if self.ct.as_ref().unwrap().ty == TokenType::If {
+                Some(vec![self.parse_if_decl()?])
+            } else {
+                self.consume(TokenType::Lbrace)?;
+                let stmts = self.parse_block()?;
+                self.consume(TokenType::Rbrace)?;
+                Some(stmts)
+            }
+        } else {
+            None
+        };
+        Ok(Stmt::If { expr, block, else_block })
     }
 
     fn parse_expr(&mut self) -> Result<Expr, String> {
