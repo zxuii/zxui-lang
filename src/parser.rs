@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, Expr, Stmt, UnaryOp};
+use crate::ast::{BinOp, CompOp, Expr, Stmt, UnaryOp};
 use crate::tokens::{Token, TokenType};
 
 pub struct Parser {
@@ -240,7 +240,9 @@ impl Parser {
         let mut node = self.parse_term()?;
         while matches!(
             self.ct.as_ref().unwrap().ty,
-            TokenType::Plus | TokenType::Minus
+            TokenType::Plus | TokenType::Minus | TokenType::Lt |
+            TokenType::Gt | TokenType::LtEq | TokenType::GtEq |
+            TokenType::EqEq | TokenType::BangEq
         ) {
             let op = self.ct.as_ref().unwrap().ty.clone();
             if op == TokenType::Plus {
@@ -250,11 +252,53 @@ impl Parser {
                     op: BinOp::Plus,
                     right: Box::new(self.parse_term()?),
                 };
-            } else {
+            } else if op == TokenType::Minus {
                 self.consume(TokenType::Minus)?;
                 node = Expr::BinOp {
                     left: Box::new(node),
                     op: BinOp::Minus,
+                    right: Box::new(self.parse_term()?),
+                };
+            } else if op == TokenType::Lt {
+                self.consume(TokenType::Lt)?;
+                node = Expr::CompOp {
+                    left: Box::new(node),
+                    op: CompOp::Lt,
+                    right: Box::new(self.parse_term()?),
+                };
+            } else if op == TokenType::Gt {
+                self.consume(TokenType::Gt)?;
+                node = Expr::CompOp {
+                    left: Box::new(node),
+                    op: CompOp::Gt,
+                    right: Box::new(self.parse_term()?),
+                };
+            } else if op == TokenType::LtEq {
+                self.consume(TokenType::LtEq)?;
+                node = Expr::CompOp {
+                    left: Box::new(node),
+                    op: CompOp::LtEq,
+                    right: Box::new(self.parse_term()?),
+                };
+            } else if op == TokenType::GtEq {
+                self.consume(TokenType::GtEq)?;
+                node = Expr::CompOp {
+                    left: Box::new(node),
+                    op: CompOp::GtEq,
+                    right: Box::new(self.parse_term()?),
+                };
+            } else if op == TokenType::EqEq {
+                self.consume(TokenType::EqEq)?;
+                node = Expr::CompOp {
+                    left: Box::new(node),
+                    op: CompOp::EqEq,
+                    right: Box::new(self.parse_term()?),
+                };
+            } else if op == TokenType::BangEq {
+                self.consume(TokenType::BangEq)?;
+                node = Expr::CompOp {
+                    left: Box::new(node),
+                    op: CompOp::NotEq,
                     right: Box::new(self.parse_term()?),
                 };
             }

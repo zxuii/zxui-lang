@@ -131,6 +131,8 @@ impl Interpreter {
                     _ => Err(format!("'{callee}' is not a function.")),
                 }
             }
+
+            _ => todo!()
         }
     }
 
