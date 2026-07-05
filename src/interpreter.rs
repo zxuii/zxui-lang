@@ -234,6 +234,28 @@ impl Interpreter {
                 Ok(None)
             }
 
+            Stmt::If { expr, block } => {
+                let val = self.eval_expr(expr)?;
+                match val {
+                    Value::Boolean(b) => {
+                        if b {
+                            let mut ret = None;
+                            for stmt in block {
+                                ret = self.exec_stmt(stmt)?;
+                                if ret.is_some() {
+                                    break;
+                                }
+                            }
+                            Ok(ret)
+                        } else {
+                            Ok(None)
+                        }
+                    }
+
+                    _ => Err("if statement on non-boolean type".into())
+                }
+            }
+
             Stmt::Return(expr) => {
                 let val = self.eval_expr(expr)?;
                 Ok(Some(val))
