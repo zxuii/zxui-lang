@@ -139,6 +139,7 @@ impl Parser {
                 }
             }
             TokenType::If => self.parse_if_decl(),
+            TokenType::While => self.parse_while(),
             _ => Ok(Stmt::ExprStmt(self.parse_expr()?)),
         }
     }
@@ -249,6 +250,17 @@ impl Parser {
             None
         };
         Ok(Stmt::If { expr, block, else_block })
+    }
+
+    fn parse_while(&mut self) -> Result<Stmt, String> {
+        self.consume(TokenType::While)?;
+        self.consume(TokenType::Lparen)?;
+        let expr = self.parse_expr()?;
+        self.consume(TokenType::Rparen)?;
+        self.consume(TokenType::Lbrace)?;
+        let block = self.parse_block()?;
+        self.consume(TokenType::Rbrace)?;
+        Ok(Stmt::While { expr, block })
     }
 
     fn parse_expr(&mut self) -> Result<Expr, String> {

@@ -14,6 +14,7 @@ pub enum TokenType {
     Return,
     If,
     Else,
+    While,
 
     // Symbols
     Plus,
@@ -56,6 +57,7 @@ impl std::fmt::Display for TokenType {
             TokenType::Return => { write!(f, "return") }
             TokenType::If => { write!(f, "if") }
             TokenType::Else => { write!(f, "else") }
+            TokenType::While => { write!(f, "while") }
             TokenType::Plus => { write!(f, "+") }
             TokenType::Minus => { write!(f, "-") }
             TokenType::Asterisk => { write!(f, "*") }

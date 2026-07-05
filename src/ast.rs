@@ -69,6 +69,7 @@ pub enum Stmt {
     Assign { name: String, expr: Expr },
     Return(Expr),
     If { expr: Expr, block: Vec<Stmt>, else_block: Option<Vec<Stmt>> },
+    While { expr: Expr, block: Vec<Stmt> },
     ExprStmt(Expr),
     FunDecl { name: String, params: Vec<String>, body: Vec<Stmt> },
     Block(Vec<Stmt>),

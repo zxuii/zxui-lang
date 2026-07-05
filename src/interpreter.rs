@@ -248,6 +248,22 @@ impl Interpreter {
                 }
             }
 
+            Stmt::While { expr, block } => {
+                loop {
+                    match self.eval_expr(expr)? {
+                        Value::Boolean(true) => {
+                            let ret = self.exec_block(block)?;
+                            if ret.is_some() {
+                                return Ok(ret);
+                            }
+                        }
+                        Value::Boolean(false) => break,
+                        _ => return Err("while condition must be boolean".into())
+                    }
+                }
+                Ok(None)
+            }
+
             Stmt::Return(expr) => {
                 let val = self.eval_expr(expr)?;
                 Ok(Some(val))
