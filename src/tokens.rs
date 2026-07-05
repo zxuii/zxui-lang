@@ -27,6 +27,8 @@ pub enum TokenType {
     GtEq, // >=
     Bang, // !
     BangEq, // !=
+    And, // and
+    Or, // or
     Eof,
     Program
 }
@@ -61,6 +63,8 @@ impl std::fmt::Display for TokenType {
             TokenType::GtEq => { write!(f, ">=") }
             TokenType::Bang => { write!(f, "!") }
             TokenType::BangEq => { write!(f, "!=") }
+            TokenType::And => { write!(f, "and") }
+            TokenType::Or => { write!(f, "or") }
             TokenType::Eof => { write!(f, "eof") }
             TokenType::Program => { write!(f, "program") }
         }

@@ -19,6 +19,11 @@ pub enum Expr {
         op: CompOp,
         right: Box<Expr>
     },
+    LogicalOp {
+        left: Box<Expr>,
+        op: LogicalOp,
+        right: Box<Expr>
+    },
     Call {
         callee: String,
         args: Vec<Expr>,
@@ -31,6 +36,12 @@ pub enum UnaryOp {
     Plus,
     Minus,
     Not,
+}
+
+#[derive(Debug, Clone)]
+pub enum LogicalOp {
+    And,
+    Or,
 }
 
 #[derive(Debug, Clone)]
