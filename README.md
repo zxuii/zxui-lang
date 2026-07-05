@@ -21,7 +21,7 @@ let x = tambah(1, 5);
 println("tambah(1,5) = ", x + 5.2);
 
 let c = caller("ini dipanggil dari: ");
-c()
+println("nilai kembalian fungsi c(): ", c());
 ```
 
 Kode di atas adalah demonstrasi sederhana bahasa pemrograman Zxui yang dimana dapat menggunakan closure.
