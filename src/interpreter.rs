@@ -30,6 +30,7 @@ impl Interpreter {
     fn define_natives(&mut self) {
         self.env.borrow_mut().define("println".to_string(), Value::native_fun("println".to_string(), -1, Rc::new(native_println)));
         self.env.borrow_mut().define("print".to_string(), Value::native_fun("print".to_string(), -1, Rc::new(native_print)));
+        self.env.borrow_mut().define("readline".to_string(), Value::native_fun("print".to_string(), -1, Rc::new(native_readline)));
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
