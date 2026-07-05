@@ -138,7 +138,7 @@ impl Interpreter {
             }   
 
             Expr::Call { callee, args } => {
-                let fun = self.env.borrow_mut().get(callee.clone())?;
+                let fun = self.env.borrow().get(callee.clone())?;
 
                 let evaluated_args: Result<Vec<Value>, String> =
                     args.iter().map(|arg| self.eval_expr(arg)).collect();
