@@ -236,10 +236,29 @@ impl Lexer {
 
         self.advance();
         let mut str = String::new();
-        
+
         while self.ch != Some('"') && self.ch != None {
-            str.push(self.ch.unwrap());
-            self.advance();
+            if self.ch == Some('\\') {
+                self.advance();
+                match self.ch {
+                    Some('n') => str.push('\n'),
+                    Some('t') => str.push('\t'),
+                    Some('r') => str.push('\r'),
+                    Some('\\') => str.push('\\'),
+                    Some('"') => str.push('"'),
+                    Some('0') => str.push('\0'),
+                    Some(c) => {
+                        self.error(format!("unknown escape sequence '\\{}'", c));
+                    }
+                    None => {
+                        self.error("unterminated string".to_string());
+                    }
+                }
+                self.advance();
+            } else {
+                str.push(self.ch.unwrap());
+                self.advance();
+            }
         }
 
         if self.ch == None {
@@ -247,7 +266,7 @@ impl Lexer {
         }
 
         self.advance();
-        
+
         self.add_token(TokenType::String(str), start_line, start_col);
     }
 
