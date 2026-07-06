@@ -27,7 +27,7 @@ fn run() {
         let file = read_to_string(path);
         match file {
             Ok(f) => {
-                let mut lex = Lexer::new(f.clone());
+                let mut lex = Lexer::new(path.clone(), f.clone());
                 lex.tokenize();
                 // for t in &lex.tokens {
                 //     println!("{}", t);

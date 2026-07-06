@@ -3,6 +3,7 @@ use crate::tokens::{Token, TokenType};
 pub struct Lexer {
     code: Vec<char>,
     code_raw: String,
+    filename: String,
     line: usize,
     col: usize,
     pos: usize,
@@ -11,11 +12,12 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(code_raw: String) -> Self {
+    pub fn new(filename: String, code_raw: String) -> Self {
         let code: Vec<char> = code_raw.chars().collect();
         Self {
             code,
             code_raw,
+            filename,
             line: 1,
             col: 0,
             pos: 0,
@@ -25,7 +27,10 @@ impl Lexer {
     }
 
     fn error(&self, e: String) {
-        eprintln!("Lexer Error: {}", e);
+        eprintln!(
+            "Lexer Error: {} at {}:{}:{}",
+            e, self.filename, self.line, self.col
+        );
         eprintln!("    {}", self.code_raw.lines().nth(self.line - 1).unwrap());
         let mut cursor = String::from("    ");
         for _ in 0..self.col - 1 {
@@ -39,33 +44,25 @@ impl Lexer {
     pub fn tokenize(&mut self) {
         self.advance();
         self.add_token(TokenType::Program, self.line, self.col);
-        while !(self.ch == None) {
-            match self.next_token() {
-                Ok(_) => {}
-                Err(e) => {
-                    self.error(e);
-                }
-            }
+        while self.ch != None {
+            self.next_token();
         }
 
         self.add_token(TokenType::Eof, self.line, self.col);
     }
-    fn next_token(&mut self) -> Result<(), String> {
+    fn next_token(&mut self) {
         self.skip_whitespace();
 
         if self.ch == None {
-            return Ok(());
+            return;
         }
 
         if self.ch == Some('+') {
             self.add_token_advance(TokenType::Plus);
-            Ok(())
         } else if self.ch == Some('-') {
             self.add_token_advance(TokenType::Minus);
-            Ok(())
         } else if self.ch == Some('*') {
             self.add_token_advance(TokenType::Asterisk);
-            Ok(())
         } else if self.ch == Some('/') {
             if self.peek() == Some('/') {
                 self.advance();
@@ -99,31 +96,22 @@ impl Lexer {
             } else {
                 self.add_token_advance(TokenType::Slash);
             }
-            Ok(())
         } else if self.ch == Some(';') {
             self.add_token_advance(TokenType::Semicolon);
-            Ok(())
         } else if self.ch == Some('(') {
             self.add_token_advance(TokenType::Lparen);
-            Ok(())
         } else if self.ch == Some(')') {
             self.add_token_advance(TokenType::Rparen);
-            Ok(())
         } else if self.ch == Some('{') {
             self.add_token_advance(TokenType::Lbrace);
-            Ok(())
         } else if self.ch == Some('}') {
             self.add_token_advance(TokenType::Rbrace);
-            Ok(())
         } else if self.ch == Some('[') {
             self.add_token_advance(TokenType::Lbracket);
-            Ok(())
         } else if self.ch == Some(']') {
             self.add_token_advance(TokenType::Rbracket);
-            Ok(())
         } else if self.ch == Some(',') {
             self.add_token_advance(TokenType::Comma);
-            Ok(())
         } else if self.ch == Some('=') {
             if self.peek() == Some('=') {
                 self.add_token(TokenType::EqEq, self.line, self.col);
@@ -132,7 +120,6 @@ impl Lexer {
             } else {
                 self.add_token_advance(TokenType::Equal);
             }
-            Ok(())
         } else if self.ch == Some('<') {
             if self.peek() == Some('=') {
                 self.add_token(TokenType::LtEq, self.line, self.col);
@@ -141,7 +128,6 @@ impl Lexer {
             } else {
                 self.add_token_advance(TokenType::Lt);
             }
-            Ok(())
         } else if self.ch == Some('>') {
             if self.peek() == Some('=') {
                 self.add_token(TokenType::GtEq, self.line, self.col);
@@ -150,7 +136,6 @@ impl Lexer {
             } else {
                 self.add_token_advance(TokenType::Gt);
             }
-            Ok(())
         } else if self.ch == Some('!') {
             if self.peek() == Some('=') {
                 self.add_token(TokenType::BangEq, self.line, self.col);
@@ -159,16 +144,12 @@ impl Lexer {
             } else {
                 self.add_token_advance(TokenType::Bang);
             }
-            Ok(())
         } else if self.is_alpha() {
             self.parse_ident_or_key();
-            Ok(())
         } else if self.is_int(self.ch) {
             self.parse_number();
-            Ok(())
         } else if self.ch == Some('"') {
             self.parse_string();
-            Ok(())
         } else {
             let mut c = String::new();
             if self.ch.is_none() {
@@ -176,7 +157,7 @@ impl Lexer {
             } else {
                 c.push(self.ch.unwrap())
             }
-            Err(format!("unexpected character '{}' at {}:{}", c, self.line, self.col).to_string())
+            self.error(format!("unexpected character '{}'", c))
         }
     }
 
