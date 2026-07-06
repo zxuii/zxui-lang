@@ -83,6 +83,10 @@ impl Interpreter {
             "pop".to_string(),
             Value::native_fun("pop".to_string(), 1, Rc::new(native_pop)),
         );
+        self.env.borrow_mut().define(
+            "len".to_string(),
+            Value::native_fun("len".to_string(), 1, Rc::new(native_len)),
+        );
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
@@ -177,7 +181,16 @@ impl Interpreter {
                         };
                         Ok(Value::Boolean(result))
                     }
-
+                    (Value::Null, Value::Null) => match op {
+                        CompOp::EqEq => Ok(Value::Boolean(true)),
+                        CompOp::NotEq => Ok(Value::Boolean(false)),
+                        _ => Err("cannot use ordering comparison ('<', '>', '<=', '>=') on null".into()),
+                    },
+                    (Value::Array(a), Value::Array(b)) => match op {
+                        CompOp::EqEq => Ok(Value::Boolean(Rc::ptr_eq(&a, &b))),
+                        CompOp::NotEq => Ok(Value::Boolean(!Rc::ptr_eq(&a, &b))),
+                        _ => Err("cannot use ordering comparison ('<', '>', '<=', '>=') on array".into()),
+                    },
                     _ => Err("comparison operation on unsupported type".into()),
                 }
             }
