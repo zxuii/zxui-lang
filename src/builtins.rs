@@ -76,3 +76,15 @@ pub fn native_number(args: Vec<Value>) -> Result<Value, String> {
         )),
     }
 }
+
+pub fn native_string(args: Vec<Value>) -> Result<Value, String> {
+    match &args[0] {
+        Value::Number(num) => Ok(Value::String(format!("{}", num))),
+        Value::Boolean(b) => Ok(Value::String(format!("{}", b))),
+        Value::Array(arr) => Ok(Value::String(format!("{:?}", arr))),
+        Value::Function { name, params: _, body: _, closure: _ } => Ok(Value::String(format!("[fun {name}]"))),
+        Value::NativeFunction { name, arity: _, fun: _ } => Ok(Value::String(format!("[fun {name}]"))),
+        Value::Null => Ok(Value::String("null".to_string())),
+        _ => Err(format!("string(): cannot convert string type to string itself."))
+    }
+}

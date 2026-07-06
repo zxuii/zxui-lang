@@ -71,6 +71,10 @@ impl Interpreter {
             "number".to_string(),
             Value::native_fun("number".to_string(), 1, Rc::new(native_number)),
         );
+        self.env.borrow_mut().define(
+            "string".to_string(),
+            Value::native_fun("string".to_string(), 1, Rc::new(native_string)),
+        );
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
