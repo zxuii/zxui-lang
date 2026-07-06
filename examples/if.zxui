@@ -1,7 +1,7 @@
 fun cekPembuat(name){
-    if (name == "Hafidh") {
+    if name == "Hafidh" {
         println("Kamu Pembuat bahasa ini!")
-    } else if (name == "Hafidh Musyaffa") {
+    } else if name == "Hafidh Musyaffa" {
         println("Kamu Pembuat bahasa ini! (nama lengkap)")
     } else {
         println("Aku ga kenal kamu.")
