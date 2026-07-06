@@ -33,7 +33,7 @@ fn run() {
                 //     println!("{}", t);
                 // }
 
-                match Parser::new(f, lex.tokens).parse() {
+                match Parser::new(path.clone(), f, lex.tokens).parse() {
                     Ok(stmt) => {
                         // println!("{:#?}", stmt);
                         match Interpreter::new().exec_stmt(&stmt) {
