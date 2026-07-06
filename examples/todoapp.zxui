@@ -1,0 +1,96 @@
+let todos = [];
+let running = true;
+
+fun tampilMenu() {
+    println("====================");
+    println("     TODO LIST      ");
+    println("====================");
+    println("1. Lihat todos");
+    println("2. Tambah todo");
+    println("3. Hapus todo");
+    println("4. Tandai selesai/belum");
+    println("5. Keluar");
+    println("====================");
+}
+
+fun tampilTodos() {
+    if len(todos) == 0 {
+        println("Belum ada todo!");
+    } else {
+        let i = 0;
+        while i < len(todos) {
+            let todo = todos[i];
+            let teks = todo[0];
+            let selesai = todo[1];
+            let tanda = "[ ]";
+            if selesai {
+                tanda = "[x]";
+            }
+            println(string(i + 1) + ". " + tanda + " " + teks);
+            i = i + 1;
+        }
+    }
+}
+
+fun tambahTodo() {
+    let input = readline("Masukan todo: ");
+    push(todos, [input, false]);
+    println("Todo berhasil ditambahkan!");
+}
+
+fun hapusTodo() {
+    if len(todos) == 0 {
+        println("Belum ada todo yang bisa dihapus!");
+    } else {
+        tampilTodos();
+        let input = readline("Hapus nomor berapa? ");
+        let idx = number(input) - 1;
+        if idx < 0 or idx >= len(todos) {
+            println("Nomor tidak valid!");
+        } else {
+            remove(todos, idx);
+            println("Todo berhasil dihapus!");
+        }
+    }
+}
+
+fun toggleTodo() {
+    if len(todos) == 0 {
+        println("Belum ada todo!");
+    } else {
+        tampilTodos();
+        let input = readline("Tandai nomor berapa? ");
+        let idx = number(input) - 1;
+        if idx < 0 or idx >= len(todos) {
+            println("Nomor tidak valid!");
+        } else {
+            let todo = todos[idx];
+            if todo[1] {
+                todo[1] = false;
+            } else {
+                todo[1] = true;
+            }
+            println("Status todo berhasil diubah!");
+        }
+    }
+}
+
+while running {
+    tampilMenu();
+    let pilihan = readline("Pilih menu: ");
+
+    if pilihan == "1" {
+        tampilTodos();
+    } else if pilihan == "2" {
+        tambahTodo();
+    } else if pilihan == "3" {
+        hapusTodo();
+    } else if pilihan == "4" {
+        toggleTodo();
+    } else if pilihan == "5" {
+        println("Sampai jumpa!");
+        running = false;
+    } else {
+        println("Pilihan tidak valid!");
+    }
+}
