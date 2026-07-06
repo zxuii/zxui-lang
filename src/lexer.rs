@@ -75,6 +75,19 @@ impl Lexer {
                 while self.ch != Some('\n') && self.ch != Some('\r') {
                     self.advance();
                 }
+            } else if self.peek() == Some('*') {
+                    self.advance(); self.advance();
+                    loop {
+                        if self.ch == None {
+                            self.error("unterminated block comment".to_string());
+                        }
+                        if self.ch == Some('*') && self.peek() == Some('/') {
+                            self.advance();
+                            self.advance();
+                            break;
+                        }
+                    self.advance();
+                }
             } else {
                 self.add_token_advance(TokenType::Slash);
             }
