@@ -114,6 +114,31 @@ pub fn native_pop(args: Vec<Value>) -> Result<Value, String> {
     }
 }
 
+pub fn native_remove(args: Vec<Value>) -> Result<Value, String> {
+    match &args[0] {
+        Value::Array(arr) => match &args[1] {
+            Value::Number(num) => {
+                if *num >= 0.0 {
+                    let i = *num as usize;
+                    let len = arr.borrow().len();
+                    if i < len {
+                        Ok(arr.borrow_mut().remove(i))
+                    } else {
+                        Err(format!(
+                            "remove(): index out of bounds. need index of {}, but only has {} indices.",
+                            i, len
+                        ))
+                    }
+                } else {
+                    Err("remove(): index cannot be negative number".to_string())
+                }
+            }
+            _ => Err("remove(): second argument must be a number.".to_string()),
+        },
+        _ => Err("remove(): first argument must be array.".to_string()),
+    }
+}
+
 pub fn native_len(args: Vec<Value>) -> Result<Value, String> {
     match &args[0] {
         Value::Array(arr) => Ok(Value::Number(arr.borrow().len() as f64)),

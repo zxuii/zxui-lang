@@ -87,6 +87,10 @@ impl Interpreter {
             "len".to_string(),
             Value::native_fun("len".to_string(), 1, Rc::new(native_len)),
         );
+        self.env.borrow_mut().define(
+            "remove".to_string(),
+            Value::native_fun("remove".to_string(), 2, Rc::new(native_remove)),
+        );
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
