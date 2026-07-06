@@ -70,9 +70,16 @@ impl Lexer {
             self.add_token_advance(TokenType::Asterisk);
             Ok(())
         } else if self.ch == Some('/') {
-            self.add_token_advance(TokenType::Slash);
+            if self.peek() == Some('/') {
+                self.advance(); self.advance();
+                while self.ch != Some('\n') && self.ch != Some('\r') {
+                    self.advance();
+                }
+            } else {
+                self.add_token_advance(TokenType::Slash);
+            }
             Ok(())
-        } else if self.ch == Some(';') {
+        }  else if self.ch == Some(';') {
             self.add_token_advance(TokenType::Semicolon);
             Ok(())
         } else if self.ch == Some('(') {
