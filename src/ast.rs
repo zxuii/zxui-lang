@@ -12,17 +12,17 @@ pub enum Expr {
     BinOp {
         left: Box<Expr>,
         op: BinOp,
-        right: Box<Expr>
+        right: Box<Expr>,
     },
     CompOp {
         left: Box<Expr>,
         op: CompOp,
-        right: Box<Expr>
+        right: Box<Expr>,
     },
     LogicalOp {
         left: Box<Expr>,
         op: LogicalOp,
-        right: Box<Expr>
+        right: Box<Expr>,
     },
     Call {
         callee: Box<Expr>,
@@ -51,7 +51,7 @@ pub enum CompOp {
     LtEq,
     GtEq,
     NotEq,
-    EqEq
+    EqEq,
 }
 
 #[derive(Debug, Clone)]
@@ -65,12 +65,29 @@ pub enum BinOp {
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Program(Vec<Stmt>),
-    Let { name: String, expr: Expr },
-    Assign { name: String, expr: Expr },
+    Let {
+        name: String,
+        expr: Expr,
+    },
+    Assign {
+        name: String,
+        expr: Expr,
+    },
     Return(Expr),
-    If { expr: Expr, block: Vec<Stmt>, else_block: Option<Vec<Stmt>> },
-    While { expr: Expr, block: Vec<Stmt> },
+    If {
+        expr: Expr,
+        block: Vec<Stmt>,
+        else_block: Option<Vec<Stmt>>,
+    },
+    While {
+        expr: Expr,
+        block: Vec<Stmt>,
+    },
     ExprStmt(Expr),
-    FunDecl { name: String, params: Vec<String>, body: Vec<Stmt> },
+    FunDecl {
+        name: String,
+        params: Vec<String>,
+        body: Vec<Stmt>,
+    },
     Block(Vec<Stmt>),
 }

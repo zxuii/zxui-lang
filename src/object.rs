@@ -18,7 +18,7 @@ pub enum Value {
         name: String,
         arity: i32,
         fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>,
-    }
+    },
 }
 
 impl std::fmt::Display for Value {
@@ -28,7 +28,12 @@ impl std::fmt::Display for Value {
             Value::Number(num) => write!(f, "{}", num),
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(str) => write!(f, "{}", str),
-            Value::Function { name, params: _, body: _, closure: _ } => write!(f, "[fun {name}]"),
+            Value::Function {
+                name,
+                params: _,
+                body: _,
+                closure: _,
+            } => write!(f, "[fun {name}]"),
             Value::NativeFunction { name, .. } => write!(f, "[native fun {name}]"),
         }
     }
@@ -41,14 +46,23 @@ impl std::fmt::Debug for Value {
             Value::Number(num) => write!(f, "{}", num),
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(str) => write!(f, "{}", str),
-            Value::Function { name, params: _, body: _, closure: _ } => write!(f, "[fun {name}]"),
+            Value::Function {
+                name,
+                params: _,
+                body: _,
+                closure: _,
+            } => write!(f, "[fun {name}]"),
             Value::NativeFunction { name, .. } => write!(f, "[native fun {name}]"),
         }
     }
 }
 
 impl Value {
-    pub fn native_fun(name: String, arity: i32, fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>) -> Self {
+    pub fn native_fun(
+        name: String,
+        arity: i32,
+        fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>,
+    ) -> Self {
         Self::NativeFunction { name, arity, fun }
     }
 }

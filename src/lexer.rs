@@ -26,10 +26,7 @@ impl Lexer {
 
     fn error(&self, e: String) {
         eprintln!("Lexer Error: {}", e);
-        eprintln!(
-            "    {}",
-            self.code_raw.lines().nth(self.line - 1).unwrap()
-        );
+        eprintln!("    {}", self.code_raw.lines().nth(self.line - 1).unwrap());
         let mut cursor = String::from("    ");
         for _ in 0..self.col - 1 {
             cursor.push(' ');
@@ -71,33 +68,39 @@ impl Lexer {
             Ok(())
         } else if self.ch == Some('/') {
             if self.peek() == Some('/') {
-                self.advance(); self.advance();
+                self.advance();
+                self.advance();
                 while self.ch != Some('\n') && self.ch != Some('\r') {
                     self.advance();
                 }
-        } else if self.peek() == Some('*') {
-            self.advance(); self.advance();
-            let mut depth = 1;
-            loop {
-                if self.ch == None {
-                    self.error("unterminated block comment".to_string());
+            } else if self.peek() == Some('*') {
+                self.advance();
+                self.advance();
+                let mut depth = 1;
+                loop {
+                    if self.ch == None {
+                        self.error("unterminated block comment".to_string());
+                    }
+                    if self.ch == Some('/') && self.peek() == Some('*') {
+                        self.advance();
+                        self.advance();
+                        depth += 1;
+                    } else if self.ch == Some('*') && self.peek() == Some('/') {
+                        self.advance();
+                        self.advance();
+                        depth -= 1;
+                        if depth == 0 {
+                            break;
+                        }
+                    } else {
+                        self.advance();
+                    }
                 }
-                if self.ch == Some('/') && self.peek() == Some('*') {
-                    self.advance(); self.advance();
-                    depth += 1;
-                } else if self.ch == Some('*') && self.peek() == Some('/') {
-                    self.advance(); self.advance();
-                    depth -= 1;
-                    if depth == 0 { break; }
-                } else {
-                    self.advance();
-                }
-            }
-        } else {
+            } else {
                 self.add_token_advance(TokenType::Slash);
             }
             Ok(())
-        }  else if self.ch == Some(';') {
+        } else if self.ch == Some(';') {
             self.add_token_advance(TokenType::Semicolon);
             Ok(())
         } else if self.ch == Some('(') {
@@ -124,7 +127,8 @@ impl Lexer {
         } else if self.ch == Some('=') {
             if self.peek() == Some('=') {
                 self.add_token(TokenType::EqEq, self.line, self.col);
-                self.advance(); self.advance();
+                self.advance();
+                self.advance();
             } else {
                 self.add_token_advance(TokenType::Equal);
             }
@@ -132,7 +136,8 @@ impl Lexer {
         } else if self.ch == Some('<') {
             if self.peek() == Some('=') {
                 self.add_token(TokenType::LtEq, self.line, self.col);
-                self.advance(); self.advance();
+                self.advance();
+                self.advance();
             } else {
                 self.add_token_advance(TokenType::Lt);
             }
@@ -140,7 +145,8 @@ impl Lexer {
         } else if self.ch == Some('>') {
             if self.peek() == Some('=') {
                 self.add_token(TokenType::GtEq, self.line, self.col);
-                self.advance(); self.advance();
+                self.advance();
+                self.advance();
             } else {
                 self.add_token_advance(TokenType::Gt);
             }
@@ -148,7 +154,8 @@ impl Lexer {
         } else if self.ch == Some('!') {
             if self.peek() == Some('=') {
                 self.add_token(TokenType::BangEq, self.line, self.col);
-                self.advance(); self.advance();
+                self.advance();
+                self.advance();
             } else {
                 self.add_token_advance(TokenType::Bang);
             }

@@ -61,7 +61,13 @@ impl Parser {
             None => "unknown".to_string(),
         };
 
-        let snippet = format!("    {}", self.code.lines().nth(self.ct.as_ref().unwrap().line - 1).unwrap());
+        let snippet = format!(
+            "    {}",
+            self.code
+                .lines()
+                .nth(self.ct.as_ref().unwrap().line - 1)
+                .unwrap()
+        );
         let mut cursor = String::from("    ");
         for _ in 0..self.ct.as_ref().unwrap().col - 1 {
             cursor.push(' ');
@@ -76,7 +82,10 @@ impl Parser {
             )),
             Some(tok) => {
                 if let Some(m) = msg {
-                    Err(format!("{} at {}:{}\n{}\n{}", m, tok.line, tok.col, snippet, cursor))
+                    Err(format!(
+                        "{} at {}:{}\n{}\n{}",
+                        m, tok.line, tok.col, snippet, cursor
+                    ))
                 } else {
                     Err(format!(
                         "unexpected token '{}'. expected '{}' at {}:{}\n{}\n{}",
@@ -249,7 +258,11 @@ impl Parser {
         } else {
             None
         };
-        Ok(Stmt::If { expr, block, else_block })
+        Ok(Stmt::If {
+            expr,
+            block,
+            else_block,
+        })
     }
 
     fn parse_while(&mut self) -> Result<Stmt, String> {
@@ -265,7 +278,7 @@ impl Parser {
 
     fn parse_expr(&mut self) -> Result<Expr, String> {
         let mut node = self.parse_logical_and()?;
-        
+
         while matches!(self.ct.as_ref().unwrap().ty, TokenType::Or) {
             self.consume(TokenType::Or)?;
             node = Expr::LogicalOp {
@@ -279,7 +292,7 @@ impl Parser {
 
     fn parse_logical_and(&mut self) -> Result<Expr, String> {
         let mut node = self.parse_comparison()?;
-        
+
         while matches!(self.ct.as_ref().unwrap().ty, TokenType::And) {
             self.consume(TokenType::And)?;
             node = Expr::LogicalOp {
@@ -293,15 +306,19 @@ impl Parser {
 
     fn parse_comparison(&mut self) -> Result<Expr, String> {
         let mut node = self.parse_additive()?;
-        
+
         while matches!(
             self.ct.as_ref().unwrap().ty,
-            TokenType::Lt | TokenType::Gt | TokenType::LtEq | 
-            TokenType::GtEq | TokenType::EqEq | TokenType::BangEq
+            TokenType::Lt
+                | TokenType::Gt
+                | TokenType::LtEq
+                | TokenType::GtEq
+                | TokenType::EqEq
+                | TokenType::BangEq
         ) {
             let op = self.ct.as_ref().unwrap().ty.clone();
             self.consume(op.clone())?;
-            
+
             let comp_op = match op {
                 TokenType::Lt => CompOp::Lt,
                 TokenType::Gt => CompOp::Gt,
@@ -323,11 +340,14 @@ impl Parser {
 
     fn parse_additive(&mut self) -> Result<Expr, String> {
         let mut node = self.parse_term()?;
-        
-        while matches!(self.ct.as_ref().unwrap().ty, TokenType::Plus | TokenType::Minus) {
+
+        while matches!(
+            self.ct.as_ref().unwrap().ty,
+            TokenType::Plus | TokenType::Minus
+        ) {
             let op = self.ct.as_ref().unwrap().ty.clone();
             self.consume(op.clone())?;
-            
+
             let bin_op = match op {
                 TokenType::Plus => BinOp::Plus,
                 TokenType::Minus => BinOp::Minus,
@@ -373,15 +393,24 @@ impl Parser {
         match self.ct.as_ref().unwrap().ty.clone() {
             TokenType::Plus => {
                 self.consume(TokenType::Plus)?;
-                Ok(Expr::Unary { op: UnaryOp::Plus, expr: Box::new(self.parse_unary()?) })
+                Ok(Expr::Unary {
+                    op: UnaryOp::Plus,
+                    expr: Box::new(self.parse_unary()?),
+                })
             }
             TokenType::Minus => {
                 self.consume(TokenType::Minus)?;
-                Ok(Expr::Unary { op: UnaryOp::Minus, expr: Box::new(self.parse_unary()?) })
+                Ok(Expr::Unary {
+                    op: UnaryOp::Minus,
+                    expr: Box::new(self.parse_unary()?),
+                })
             }
             TokenType::Bang => {
                 self.consume(TokenType::Bang)?;
-                Ok(Expr::Unary { op: UnaryOp::Not, expr: Box::new(self.parse_unary()?) })
+                Ok(Expr::Unary {
+                    op: UnaryOp::Not,
+                    expr: Box::new(self.parse_unary()?),
+                })
             }
             _ => self.parse_factor(),
         }

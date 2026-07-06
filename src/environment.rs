@@ -1,8 +1,8 @@
 use crate::object::Value;
 
 use std::cell::RefCell;
-use std::rc::Rc;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Environment {

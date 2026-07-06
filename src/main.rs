@@ -1,14 +1,14 @@
-mod lexer;
-mod tokens;
 mod ast;
-mod parser;
-mod object;
+mod builtins;
 mod environment;
 mod interpreter;
-mod builtins;
+mod lexer;
+mod object;
+mod parser;
+mod tokens;
 
-use lexer::Lexer;
 use interpreter::Interpreter;
+use lexer::Lexer;
 use parser::Parser;
 use std::{env, fs::read_to_string, process::exit};
 
@@ -32,11 +32,10 @@ fn main() {
                                 // println!("{:?}", result.unwrap_or(object::Value::Null) );
                             }
 
-                            Err(e) => eprintln!("Runtime Error: {e}")
+                            Err(e) => eprintln!("Runtime Error: {e}"),
                         }
-
-                    },
-                    Err(e) => eprintln!("Parse Error: {e}")
+                    }
+                    Err(e) => eprintln!("Parse Error: {e}"),
                 }
                 // println!("{:#?}", parse.parse().expect("Parse Error"));
             }

@@ -1,7 +1,7 @@
 use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, UnaryOp};
+use crate::builtins::*;
 use crate::environment::Environment;
 use crate::object::Value;
-use crate::builtins::*;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -9,8 +9,6 @@ use std::rc::Rc;
 pub struct Interpreter {
     env: Rc<RefCell<Environment>>,
 }
-
-
 
 impl Interpreter {
     pub fn new() -> Self {
@@ -22,17 +20,30 @@ impl Interpreter {
     }
 
     pub fn new_env(env: Rc<RefCell<Environment>>) -> Self {
-        Self {
-            env,
-        }
+        Self { env }
     }
 
     fn define_natives(&mut self) {
-        self.env.borrow_mut().define("println".to_string(), Value::native_fun("println".to_string(), -1, Rc::new(native_println)));
-        self.env.borrow_mut().define("print".to_string(), Value::native_fun("print".to_string(), -1, Rc::new(native_print)));
-        self.env.borrow_mut().define("readline".to_string(), Value::native_fun("print".to_string(), -1, Rc::new(native_readline)));
-        self.env.borrow_mut().define("typeof".to_string(), Value::native_fun("typeof".to_string(), 1, Rc::new(native_typeof)));
-        self.env.borrow_mut().define("number".to_string(), Value::native_fun("number".to_string(), 1, Rc::new(native_number)));
+        self.env.borrow_mut().define(
+            "println".to_string(),
+            Value::native_fun("println".to_string(), -1, Rc::new(native_println)),
+        );
+        self.env.borrow_mut().define(
+            "print".to_string(),
+            Value::native_fun("print".to_string(), -1, Rc::new(native_print)),
+        );
+        self.env.borrow_mut().define(
+            "readline".to_string(),
+            Value::native_fun("print".to_string(), -1, Rc::new(native_readline)),
+        );
+        self.env.borrow_mut().define(
+            "typeof".to_string(),
+            Value::native_fun("typeof".to_string(), 1, Rc::new(native_typeof)),
+        );
+        self.env.borrow_mut().define(
+            "number".to_string(),
+            Value::native_fun("number".to_string(), 1, Rc::new(native_number)),
+        );
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
@@ -74,11 +85,11 @@ impl Interpreter {
                     (Value::String(a), Value::String(b)) if matches!(op, BinOp::Plus) => {
                         Ok(Value::String(a + &b))
                     }
-                    
+
                     (Value::String(a), Value::Number(b)) if matches!(op, BinOp::Multiply) => {
                         Ok(Value::String(a.repeat(b as usize)))
                     }
-                    
+
                     _ => Err("binary operation on unsupported type".into()),
                 }
             }
@@ -121,7 +132,7 @@ impl Interpreter {
                         Ok(Value::Boolean(result))
                     }
 
-                    _ => Err("comparison operation on unsupported type".into())
+                    _ => Err("comparison operation on unsupported type".into()),
                 }
             }
 
@@ -137,7 +148,7 @@ impl Interpreter {
                     (Value::Boolean(_), Value::Boolean(b)) => Ok(Value::Boolean(b)),
                     _ => Err("logical operation on non-boolean".into()),
                 }
-            }   
+            }
 
             Expr::Call { callee, args } => {
                 let fun = self.eval_expr(callee)?;
@@ -147,7 +158,12 @@ impl Interpreter {
                 let evaluated_args = evaluated_args?;
 
                 match fun {
-                    Value::Function { name: _, params, body, closure } => {
+                    Value::Function {
+                        name: _,
+                        params,
+                        body,
+                        closure,
+                    } => {
                         if evaluated_args.len() != params.len() {
                             return Err(format!(
                                 "function expects {} args but got {}",
@@ -156,7 +172,9 @@ impl Interpreter {
                             ));
                         }
 
-                        let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(Rc::clone(&closure)))));
+                        let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(
+                            Rc::clone(&closure),
+                        ))));
                         for (param, arg) in params.iter().zip(evaluated_args) {
                             call_env.borrow_mut().define(param.clone(), arg);
                         }
@@ -176,7 +194,9 @@ impl Interpreter {
                         if arity != -1 && evaluated_args.len() != arity as usize {
                             return Err(format!(
                                 "function '{}' expects {} args but got {}",
-                                name, arity, evaluated_args.len()
+                                name,
+                                arity,
+                                evaluated_args.len()
                             ));
                         }
                         fun(evaluated_args)
@@ -190,12 +210,12 @@ impl Interpreter {
 
     fn exec_stmts(&mut self, stmts: &[Stmt]) -> Result<Option<Value>, String> {
         let mut ret = None;
-            for stmt in stmts {
-                ret = self.exec_stmt(stmt)?;
-                if ret.is_some() {
-                    break;
-                }
+        for stmt in stmts {
+            ret = self.exec_stmt(stmt)?;
+            if ret.is_some() {
+                break;
             }
+        }
         Ok(ret)
     }
 
@@ -234,21 +254,23 @@ impl Interpreter {
                 Ok(None)
             }
 
-            Stmt::If { expr, block, else_block } => {
-                match self.eval_expr(expr)? {
-                    Value::Boolean(b) => {
-                        if b {
-                            self.exec_block(block)
-                        } else if let Some(else_stmts) = else_block {
-                            self.exec_block(else_stmts) 
-                        } else {
-                            Ok(None)
-                        }
+            Stmt::If {
+                expr,
+                block,
+                else_block,
+            } => match self.eval_expr(expr)? {
+                Value::Boolean(b) => {
+                    if b {
+                        self.exec_block(block)
+                    } else if let Some(else_stmts) = else_block {
+                        self.exec_block(else_stmts)
+                    } else {
+                        Ok(None)
                     }
-
-                    _ => Err("if statement on non-boolean type".into())
                 }
-            }
+
+                _ => Err("if statement on non-boolean type".into()),
+            },
 
             Stmt::While { expr, block } => {
                 loop {
@@ -260,7 +282,7 @@ impl Interpreter {
                             }
                         }
                         Value::Boolean(false) => break,
-                        _ => return Err("while condition must be boolean".into())
+                        _ => return Err("while condition must be boolean".into()),
                     }
                 }
                 Ok(None)
