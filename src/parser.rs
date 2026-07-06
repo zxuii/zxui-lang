@@ -34,13 +34,13 @@ impl Parser {
         }
     }
 
-    fn peek(&self) -> Option<Token> {
-        if !self.is_at_end() {
-            Some(self.tokens[self.pos].clone())
-        } else {
-            None
-        }
-    }
+    // fn peek(&self) -> Option<Token> {
+    //     if !self.is_at_end() {
+    //         Some(self.tokens[self.pos].clone())
+    //     } else {
+    //         None
+    //     }
+    // }
 
     fn is_at_end(&self) -> bool {
         matches!(&self.ct, Some(tok) if tok.ty == TokenType::Eof)
@@ -138,12 +138,12 @@ impl Parser {
                 Ok(Stmt::Block(stmts))
             }
             TokenType::Identifier(_) => {
-                if let Some(next_tok) = self.peek() {
-                    if next_tok.ty == TokenType::Equal {
-                        return self.parse_var_assign();
-                    }
+                let expr = self.parse_factor()?;
+                if self.ct.as_ref().unwrap().ty == TokenType::Equal {
+                    self.parse_var_assign(expr)
+                } else {
+                    Ok(Stmt::ExprStmt(expr))
                 }
-                Ok(Stmt::ExprStmt(self.parse_expr()?))
             }
             TokenType::Return => {
                 if self.fun_counter > 0 {
@@ -257,15 +257,10 @@ impl Parser {
         Ok(Stmt::Let { name, expr })
     }
 
-    fn parse_var_assign(&mut self) -> Result<Stmt, String> {
-        let name = match &self.ct.as_ref().unwrap().ty {
-            TokenType::Identifier(n) => n.clone(),
-            _ => return self.error(None, Some(vec![TokenType::Identifier(String::new())])),
-        };
-        self.consume(TokenType::Identifier(name.clone()))?;
+    fn parse_var_assign(&mut self, target: Expr) -> Result<Stmt, String> {
         self.consume(TokenType::Equal)?;
         let expr = self.parse_expr()?;
-        Ok(Stmt::Assign { name, expr })
+        Ok(Stmt::Assign { target, expr })
     }
 
     fn parse_if_decl(&mut self) -> Result<Stmt, String> {
