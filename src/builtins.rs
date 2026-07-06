@@ -33,6 +33,7 @@ pub fn native_readline(args: Vec<Value>) -> Result<Value, String> {
 pub fn native_typeof(args: Vec<Value>) -> Result<Value, String> {
     match &args[0] {
         Value::String(_) => Ok(Value::String("string".to_string())),
+        Value::Array(_) => Ok(Value::String("array".to_string())),
         Value::Number(_) => Ok(Value::String("number".to_string())),
         Value::Function {
             name: _,

@@ -5,6 +5,7 @@ pub enum Expr {
     String(String),
     Boolean(bool),
     Null,
+    Array(Vec<Expr>),
     Unary {
         op: UnaryOp,
         expr: Box<Expr>,
@@ -28,6 +29,10 @@ pub enum Expr {
         callee: Box<Expr>,
         args: Vec<Expr>,
         line: usize,
+    },
+    Index {
+        target: Box<Expr>,
+        index: Box<Expr>,
     },
     NoOp,
 }

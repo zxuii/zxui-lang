@@ -419,15 +419,31 @@ impl Parser {
     fn parse_factor(&mut self) -> Result<Expr, String> {
         let mut expr = self.parse_primary()?;
 
-        while self.ct.as_ref().unwrap().ty == TokenType::Lparen {
-            self.consume(TokenType::Lparen)?;
-            let args = self.parse_args()?;
-            self.consume(TokenType::Rparen)?;
-            expr = Expr::Call {
-                callee: Box::new(expr),
-                args,
-                line: self.ct.as_ref().unwrap().line,
-            };
+        loop {
+            match self.ct.as_ref().unwrap().ty {
+                TokenType::Lparen => {
+                    self.consume(TokenType::Lparen)?;
+                    let args = self.parse_args()?;
+                    self.consume(TokenType::Rparen)?;
+                    expr = Expr::Call {
+                        callee: Box::new(expr),
+                        args,
+                        line: self.ct.as_ref().unwrap().line,
+                    };
+                }
+
+                TokenType::Lbracket => {
+                    self.consume(TokenType::Lbracket)?;
+                    let index = self.parse_expr()?;
+                    self.consume(TokenType::Rbracket)?;
+                    expr = Expr::Index {
+                        target: Box::new(expr),
+                        index: Box::new(index),
+                    };
+                }
+
+                _ => break,
+            }
         }
 
         Ok(expr)
@@ -459,6 +475,12 @@ impl Parser {
                 self.consume(TokenType::Lparen)?;
                 let node = self.parse_expr()?;
                 self.consume(TokenType::Rparen)?;
+                Ok(node)
+            }
+            TokenType::Lbracket => {
+                self.consume(TokenType::Lbracket)?;
+                let node = Expr::Array(self.parse_args()?);
+                self.consume(TokenType::Rbracket)?;
                 Ok(node)
             }
             TokenType::Identifier(name) => {

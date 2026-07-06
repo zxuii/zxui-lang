@@ -71,6 +71,13 @@ impl Interpreter {
             Expr::Number(num) => Ok(Value::Number(*num)),
             Expr::String(str) => Ok(Value::String(str.clone())),
             Expr::Boolean(b) => Ok(Value::Boolean(*b)),
+            Expr::Array(exprs) => {
+                let mut values: Vec<Value> = Vec::new();
+                for expr in exprs {
+                    values.push(self.eval_expr(expr)?);
+                }
+                Ok(Value::Array(values))
+            }
             Expr::Null => Ok(Value::Null),
             Expr::NoOp => Ok(Value::Null),
             Expr::Identifier(name) => self.env.borrow().get(name.clone()),
@@ -260,6 +267,21 @@ impl Interpreter {
                     _ => Err("attempted to call a non-function value".into()),
                 }
             }
+
+            Expr::Index { target, index } => {
+                let var = self.eval_expr(target)?;
+                let i = self.eval_expr(index)?;
+
+                match var {
+                    Value::Array(arr) => match i {
+                        Value::Number(num) => {
+                            Ok(arr[num as usize].clone())
+                        }
+                        _ => Err("index must be a number.".into()),
+                    },
+                    _ => Err("cannot indexing of non-array type.".into()),
+                }
+            }
         }
     }
 
@@ -373,7 +395,10 @@ impl Interpreter {
             if frame.fun_name == "<script>" {
                 trace.push_str(&format!("  {}: at {}\n", i, frame.fun_name));
             } else {
-                trace.push_str(&format!("  {}: at fun {}() (line {})\n", i, frame.fun_name, frame.line));
+                trace.push_str(&format!(
+                    "  {}: at fun {}() (line {})\n",
+                    i, frame.fun_name, frame.line
+                ));
             }
         }
         trace
