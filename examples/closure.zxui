@@ -1,6 +1,6 @@
 fun closure(name) {
     fun something() {
-        println(name, "fungsi something()");
+        println(name + "fungsi something()");
     }
     return something;
 }

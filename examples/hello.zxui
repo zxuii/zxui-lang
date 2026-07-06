@@ -1,5 +1,5 @@
 fun printPerson(name) {
-    println("Hello, ", name, "!");
+    println("Hello, " + name + "!");
 }
 
 printPerson("Zxui");
