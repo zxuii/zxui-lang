@@ -228,9 +228,9 @@ impl Parser {
 
     fn parse_if_decl(&mut self) -> Result<Stmt, String> {
         self.consume(TokenType::If)?;
-        self.consume(TokenType::Lparen)?;
+        // self.consume(TokenType::Lparen)?;
         let expr = self.parse_expr()?;
-        self.consume(TokenType::Rparen)?;
+        // self.consume(TokenType::Rparen)?;
         self.consume(TokenType::Lbrace)?;
         let block = self.parse_block()?;
         self.consume(TokenType::Rbrace)?;
@@ -254,9 +254,9 @@ impl Parser {
 
     fn parse_while(&mut self) -> Result<Stmt, String> {
         self.consume(TokenType::While)?;
-        self.consume(TokenType::Lparen)?;
+        // self.consume(TokenType::Lparen)?;
         let expr = self.parse_expr()?;
-        self.consume(TokenType::Rparen)?;
+        // self.consume(TokenType::Rparen)?;
         self.consume(TokenType::Lbrace)?;
         let block = self.parse_block()?;
         self.consume(TokenType::Rbrace)?;
