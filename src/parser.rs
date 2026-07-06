@@ -204,6 +204,20 @@ impl Parser {
         Ok(args)
     }
 
+    fn parse_array_literal(&mut self) -> Result<Vec<Expr>, String> {
+        let mut args = vec![];
+        if self.ct.as_ref().unwrap().ty != TokenType::Rbracket {
+            args.push(self.parse_expr()?);
+            while self.ct.as_ref().unwrap().ty == TokenType::Comma {
+                self.consume(TokenType::Comma)?;
+                if self.ct.as_ref().unwrap().ty != TokenType::Rbracket {
+                    args.push(self.parse_expr()?);
+                }
+            }
+        }
+        Ok(args)
+    }
+
     fn parse_params(&mut self) -> Result<Vec<String>, String> {
         let mut params = vec![];
         if let TokenType::Identifier(n) = &self.ct.as_ref().unwrap().ty {
@@ -510,7 +524,7 @@ impl Parser {
             }
             TokenType::Lbracket => {
                 self.consume(TokenType::Lbracket)?;
-                let node = Expr::Array(self.parse_args()?);
+                let node = Expr::Array(self.parse_array_literal()?);
                 self.consume(TokenType::Rbracket)?;
                 Ok(node)
             }
