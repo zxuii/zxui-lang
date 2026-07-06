@@ -285,7 +285,16 @@ impl Interpreter {
                 match var {
                     Value::Array(arr) => match i {
                         Value::Number(num) => {
-                            Ok(arr[num as usize].clone())
+                            if num >= 0.0 {
+                                let i = num as usize;
+                                if arr.len() > i {
+                                    Ok(arr[i].clone())
+                                } else {
+                                    Err(format!("index out of bounds. need index of {}, but only has {} indices.", i, arr.len()).into())
+                                }
+                            } else {
+                                Err("index cannot be negatives number".into())
+                            }
                         }
                         _ => Err("index must be a number.".into()),
                     },
