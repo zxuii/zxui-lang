@@ -8,7 +8,7 @@ pub enum Value {
     Number(f64),
     Boolean(bool),
     String(String),
-    Array(Vec<Value>),
+    Array(Rc<RefCell<Vec<Value>>>),
     Function {
         name: String,
         params: Vec<String>,
@@ -29,7 +29,7 @@ impl std::fmt::Display for Value {
             Value::Number(num) => write!(f, "{}", num),
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(str) => write!(f, "{}", str),
-            Value::Array(vec) => write!(f, "{:?}", vec),
+            Value::Array(vec) => write!(f, "{:?}", vec.borrow()),
             Value::Function {
                 name,
                 params: _,

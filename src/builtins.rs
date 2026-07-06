@@ -88,3 +88,28 @@ pub fn native_string(args: Vec<Value>) -> Result<Value, String> {
         _ => Err(format!("string(): cannot convert string type to string itself."))
     }
 }
+
+
+pub fn native_push(args: Vec<Value>) -> Result<Value, String> {
+    match &args[0] {
+        Value::Array(arr) => {
+            arr.borrow_mut().push(args[1].clone());
+            Ok(Value::Null)
+        }
+
+        _ => Err(format!("push(): first argument must be array."))
+    }
+}
+
+pub fn native_pop(args: Vec<Value>) -> Result<Value, String> {
+    match &args[0] {
+        Value::Array(arr) => {
+            match arr.borrow_mut().pop() {
+                Some(val) => Ok(val),
+                None => Err(format!("pop(): cannot popping empty array."))
+            }
+            
+        }
+        _ => Err(format!("pop(): cannot popping non-array type."))
+    }
+}

@@ -75,6 +75,14 @@ impl Interpreter {
             "string".to_string(),
             Value::native_fun("string".to_string(), 1, Rc::new(native_string)),
         );
+        self.env.borrow_mut().define(
+            "push".to_string(),
+            Value::native_fun("push".to_string(), 2, Rc::new(native_push)),
+        );
+        self.env.borrow_mut().define(
+            "pop".to_string(),
+            Value::native_fun("pop".to_string(), 1, Rc::new(native_pop)),
+        );
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
@@ -87,7 +95,7 @@ impl Interpreter {
                 for expr in exprs {
                     values.push(self.eval_expr(expr)?);
                 }
-                Ok(Value::Array(values))
+                Ok(Value::Array(Rc::new(RefCell::new(values))))
             }
             Expr::Null => Ok(Value::Null),
             Expr::NoOp => Ok(Value::Null),
@@ -211,7 +219,7 @@ impl Interpreter {
 
                         if evaluated_args.len() != params.len() {
                             return Err(format!(
-                                "function expects {} args but got {}",
+                                "function <closure> expects {} args but got {}",
                                 params.len(),
                                 evaluated_args.len()
                             ));
@@ -269,7 +277,7 @@ impl Interpreter {
                     Value::NativeFunction { fun, arity, name } => {
                         if arity != -1 && evaluated_args.len() != arity as usize {
                             return Err(format!(
-                                "function '{}' expects {} args but got {}",
+                                "function {}() expects {} args but got {}",
                                 name,
                                 arity,
                                 evaluated_args.len()
@@ -291,10 +299,10 @@ impl Interpreter {
                         Value::Number(num) => {
                             if num >= 0.0 {
                                 let i = num as usize;
-                                if arr.len() > i {
-                                    Ok(arr[i].clone())
+                                if arr.borrow().len() > i {
+                                    Ok(arr.borrow()[i].clone())
                                 } else {
-                                    Err(format!("index out of bounds. need index of {}, but only has {} indices.", i, arr.len()).into())
+                                    Err(format!("index out of bounds. need index of {}, but only has {} indices.", i, arr.borrow().len()).into())
                                 }
                             } else {
                                 Err("index cannot be negatives number".into())
