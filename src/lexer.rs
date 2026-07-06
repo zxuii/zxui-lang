@@ -54,108 +54,107 @@ impl Lexer {
     fn next_token(&mut self) {
         self.skip_whitespace();
 
-        if self.ch == None {
-            return;
-        }
+        let ch = match self.ch {
+            Some(c) => c,
+            None => return,
+        };
 
-        if let Some(ch) = self.ch {
-            match ch {
-                '+' => self.add_token_advance(TokenType::Plus),
-                '-' => self.add_token_advance(TokenType::Minus),
-                '*' => self.add_token_advance(TokenType::Asterisk),
-                '/' => {
-                    if self.peek() == Some('/') {
-                        self.advance(); // advance '/'
-                        self.advance(); // advance '/'
-                        while self.ch != Some('\n') && self.ch != None {
-                            self.advance(); // skip semua sampe newline
+        match ch {
+            '+' => self.add_token_advance(TokenType::Plus),
+            '-' => self.add_token_advance(TokenType::Minus),
+            '*' => self.add_token_advance(TokenType::Asterisk),
+            '/' => {
+                if self.peek() == Some('/') {
+                    self.advance(); // advance '/'
+                    self.advance(); // advance '/'
+                    while self.ch != Some('\n') && self.ch != None {
+                        self.advance(); // skip semua sampe newline
+                    }
+                } else if self.peek() == Some('*') {
+                    self.advance(); // advance '/'
+                    self.advance(); // advance '*'
+                    let mut depth: usize = 1;
+                    loop {
+                        if self.ch == None {
+                            self.error("unterminated block comment".to_string());
                         }
-                    } else if self.peek() == Some('*') {
-                        self.advance(); // advance '/'
-                        self.advance(); // advance '*'
-                        let mut depth: usize = 1;
-                        loop {
-                            if self.ch == None {
-                                self.error("unterminated block comment".to_string());
+                        if self.ch == Some('/') && self.peek() == Some('*') {
+                            self.advance();
+                            self.advance();
+                            depth += 1;
+                        } else if self.ch == Some('*') && self.peek() == Some('/') {
+                            self.advance();
+                            self.advance();
+                            depth -= 1;
+                            if depth == 0 {
+                                break;
                             }
-                            if self.ch == Some('/') && self.peek() == Some('*') {
-                                self.advance();
-                                self.advance();
-                                depth += 1;
-                            } else if self.ch == Some('*') && self.peek() == Some('/') {
-                                self.advance();
-                                self.advance();
-                                depth -= 1;
-                                if depth == 0 {
-                                    break;
-                                }
-                            } else {
-                                self.advance(); // skip semua sampe penutup
-                            }
-                        }
-                    } else {
-                        self.add_token_advance(TokenType::Slash);
-                    }
-                }
-                ';' => self.add_token_advance(TokenType::Semicolon),
-                '(' => self.add_token_advance(TokenType::Lparen),
-                ')' => self.add_token_advance(TokenType::Rparen),
-                '{' => self.add_token_advance(TokenType::Lbrace),
-                '}' => self.add_token_advance(TokenType::Rbrace),
-                '[' => self.add_token_advance(TokenType::Lbracket),
-                ']' => self.add_token_advance(TokenType::Rbracket),
-                ',' => self.add_token_advance(TokenType::Comma),
-                '=' => {
-                    if self.peek() == Some('=') {
-                        self.add_token(TokenType::EqEq, self.line, self.col);
-                        self.advance();
-                        self.advance();
-                    } else {
-                        self.add_token_advance(TokenType::Equal);
-                    }
-                }
-                '<' => {
-                    if self.peek() == Some('=') {
-                        self.add_token(TokenType::LtEq, self.line, self.col);
-                        self.advance();
-                        self.advance();
-                    } else {
-                        self.add_token_advance(TokenType::Lt);
-                    }
-                }
-                '>' => {
-                    if self.peek() == Some('=') {
-                        self.add_token(TokenType::GtEq, self.line, self.col);
-                        self.advance();
-                        self.advance();
-                    } else {
-                        self.add_token_advance(TokenType::Gt);
-                    }
-                }
-                '!' => {
-                    if self.peek() == Some('=') {
-                        self.add_token(TokenType::BangEq, self.line, self.col);
-                        self.advance();
-                        self.advance();
-                    } else {
-                        self.add_token_advance(TokenType::Bang);
-                    }
-                }
-                '"' => self.parse_string(),
-                _ => {
-                    if self.is_alpha() {
-                        self.parse_ident_or_key();
-                    } else if self.is_int(self.ch) {
-                        self.parse_number();
-                    } else {
-                        let mut c = String::new();
-                        if self.ch.is_none() {
-                            c.push_str("unknown");
                         } else {
-                            c.push(self.ch.unwrap())
+                            self.advance(); // skip semua sampe penutup
                         }
-                        self.error(format!("unexpected character '{}'", c))
                     }
+                } else {
+                    self.add_token_advance(TokenType::Slash);
+                }
+            }
+            ';' => self.add_token_advance(TokenType::Semicolon),
+            '(' => self.add_token_advance(TokenType::Lparen),
+            ')' => self.add_token_advance(TokenType::Rparen),
+            '{' => self.add_token_advance(TokenType::Lbrace),
+            '}' => self.add_token_advance(TokenType::Rbrace),
+            '[' => self.add_token_advance(TokenType::Lbracket),
+            ']' => self.add_token_advance(TokenType::Rbracket),
+            ',' => self.add_token_advance(TokenType::Comma),
+            '=' => {
+                if self.peek() == Some('=') {
+                    self.add_token(TokenType::EqEq, self.line, self.col);
+                    self.advance();
+                    self.advance();
+                } else {
+                    self.add_token_advance(TokenType::Equal);
+                }
+            }
+            '<' => {
+                if self.peek() == Some('=') {
+                    self.add_token(TokenType::LtEq, self.line, self.col);
+                    self.advance();
+                    self.advance();
+                } else {
+                    self.add_token_advance(TokenType::Lt);
+                }
+            }
+            '>' => {
+                if self.peek() == Some('=') {
+                    self.add_token(TokenType::GtEq, self.line, self.col);
+                    self.advance();
+                    self.advance();
+                } else {
+                    self.add_token_advance(TokenType::Gt);
+                }
+            }
+            '!' => {
+                if self.peek() == Some('=') {
+                    self.add_token(TokenType::BangEq, self.line, self.col);
+                    self.advance();
+                    self.advance();
+                } else {
+                    self.add_token_advance(TokenType::Bang);
+                }
+            }
+            '"' => self.parse_string(),
+            _ => {
+                if self.is_alpha() {
+                    self.parse_ident_or_key();
+                } else if self.is_int(self.ch) {
+                    self.parse_number();
+                } else {
+                    let mut c = String::new();
+                    if self.ch.is_none() {
+                        c.push_str("unknown");
+                    } else {
+                        c.push(self.ch.unwrap())
+                    }
+                    self.error(format!("unexpected character '{}'", c))
                 }
             }
         }
