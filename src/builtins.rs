@@ -113,3 +113,11 @@ pub fn native_pop(args: Vec<Value>) -> Result<Value, String> {
         _ => Err(format!("pop(): cannot popping non-array type."))
     }
 }
+
+pub fn native_len(args: Vec<Value>) -> Result<Value, String> {
+    match &args[0] {
+        Value::Array(arr) => Ok(Value::Number(arr.borrow().len() as f64)),
+        Value::String(s) => Ok(Value::Number(s.chars().count() as f64)),
+        _ => Err("len(): argument must be an array or string.".to_string()),
+    }
+}
