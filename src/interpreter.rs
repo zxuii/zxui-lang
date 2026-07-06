@@ -6,21 +6,41 @@ use crate::object::Value;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+const MAX_DEPTH: usize = 1000; // 1 call di zxui sama kek 5-6 call di rust
+
+pub struct CallFrame {
+    pub fun_name: String,
+    pub line: usize,
+}
+
+impl CallFrame {
+    fn new(fun_name: String, line: usize) -> Self {
+        Self { fun_name, line }
+    }
+}
+
 pub struct Interpreter {
     env: Rc<RefCell<Environment>>,
+    call_stack: Rc<RefCell<Vec<CallFrame>>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         let mut interp = Self {
             env: Rc::new(RefCell::new(Environment::new())),
+            call_stack: Rc::new(RefCell::new(Vec::new())),
         };
         interp.define_natives();
         interp
+            .call_stack
+            .borrow_mut()
+            .push(CallFrame::new("<script>".to_string(), 0));
+
+        interp
     }
 
-    pub fn new_env(env: Rc<RefCell<Environment>>) -> Self {
-        Self { env }
+    pub fn new_env(env: Rc<RefCell<Environment>>, call_stack: Rc<RefCell<Vec<CallFrame>>>) -> Self {
+        Self { env, call_stack }
     }
 
     fn define_natives(&mut self) {
@@ -150,7 +170,7 @@ impl Interpreter {
                 }
             }
 
-            Expr::Call { callee, args } => {
+            Expr::Call { callee, args, line } => {
                 let fun = self.eval_expr(callee)?;
 
                 let evaluated_args: Result<Vec<Value>, String> =
@@ -159,11 +179,18 @@ impl Interpreter {
 
                 match fun {
                     Value::Function {
-                        name: _,
+                        name,
                         params,
                         body,
                         closure,
                     } => {
+                        if self.call_stack.borrow().len() >= MAX_DEPTH {
+                            let trace = self.build_stack_trace();
+                            return Err(format!(
+                                "stack overflow: maximum recursion depth exceed.\n{trace}"
+                            ));
+                        }
+
                         if evaluated_args.len() != params.len() {
                             return Err(format!(
                                 "function expects {} args but got {}",
@@ -179,15 +206,43 @@ impl Interpreter {
                             call_env.borrow_mut().define(param.clone(), arg);
                         }
 
-                        let mut interp = Interpreter::new_env(call_env);
+                        self.call_stack
+                            .borrow_mut()
+                            .push(CallFrame::new(name.clone(), *line));
+
+                        let mut interp =
+                            Interpreter::new_env(call_env, Rc::clone(&self.call_stack));
                         let mut return_val = Value::Null;
+                        let mut error = None;
                         for stmt in &body {
-                            if let Some(val) = interp.exec_stmt(stmt)? {
-                                return_val = val;
-                                break;
+                            match interp.exec_stmt(stmt) {
+                                Ok(Some(val)) => {
+                                    return_val = val;
+                                    break;
+                                }
+                                Ok(None) => {}
+                                Err(e) => {
+                                    error = Some(e);
+                                    break;
+                                }
                             }
                         }
-                        Ok(return_val)
+
+                        match &mut error {
+                            Some(e) if !e.contains("stack trace:") => {
+                                let trace = self.build_stack_trace();
+                                *e = format!("{}\n{}", e, trace);
+                            }
+
+                            _ => {}
+                        }
+
+                        self.call_stack.borrow_mut().pop();
+
+                        match error {
+                            Some(e) => Err(e),
+                            None => Ok(return_val),
+                        }
                     }
 
                     Value::NativeFunction { fun, arity, name } => {
@@ -309,5 +364,18 @@ impl Interpreter {
                 Ok(None)
             }
         }
+    }
+
+    fn build_stack_trace(&self) -> String {
+        let stack = self.call_stack.borrow();
+        let mut trace = String::from("stack trace:\n");
+        for (i, frame) in stack.iter().rev().enumerate() {
+            if frame.fun_name == "<script>" {
+                trace.push_str(&format!("  {}: at {}\n", i, frame.fun_name));
+            } else {
+                trace.push_str(&format!("  {}: at fun {}() (line {})\n", i, frame.fun_name, frame.line));
+            }
+        }
+        trace
     }
 }

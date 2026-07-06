@@ -426,6 +426,7 @@ impl Parser {
             expr = Expr::Call {
                 callee: Box::new(expr),
                 args,
+                line: self.ct.as_ref().unwrap().line,
             };
         }
 

@@ -13,6 +13,15 @@ use parser::Parser;
 use std::{env, fs::read_to_string, process::exit};
 
 fn main() {
+    let child = std::thread::Builder::new()
+        .stack_size(64 * 1024 * 1024) // 64MB untuk call stack, gede sih awokawok
+        .spawn(run) // jalanin run function
+        .unwrap();
+
+    child.join().unwrap();
+}
+
+fn run() {
     let args: Vec<String> = env::args().collect();
     if let Some(path) = args.get(1) {
         let file = read_to_string(path);
