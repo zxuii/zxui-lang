@@ -60,9 +60,33 @@ impl Lexer {
         };
 
         match ch {
-            '+' => self.add_token_advance(TokenType::Plus),
-            '-' => self.add_token_advance(TokenType::Minus),
-            '*' => self.add_token_advance(TokenType::Asterisk),
+            '+' => {
+                if self.peek() == Some('=') {
+                    self.add_token(TokenType::PlusEq, self.line, self.col);
+                    self.advance();
+                    self.advance();
+                } else {
+                    self.add_token_advance(TokenType::Plus);
+                }
+            }
+            '-' => {
+                if self.peek() == Some('=') {
+                    self.add_token(TokenType::MinusEq, self.line, self.col);
+                    self.advance();
+                    self.advance();
+                } else {
+                    self.add_token_advance(TokenType::Minus);
+                }
+            }
+            '*' => {
+                if self.peek() == Some('=') {
+                    self.add_token(TokenType::AsteriskEq, self.line, self.col);
+                    self.advance();
+                    self.advance();
+                } else {
+                    self.add_token_advance(TokenType::Asterisk);
+                }
+            }
             '/' => {
                 if self.peek() == Some('/') {
                     self.advance(); // advance '/'
@@ -93,6 +117,10 @@ impl Lexer {
                             self.advance(); // skip semua sampe penutup
                         }
                     }
+                } else if self.peek() == Some('=') {
+                    self.add_token(TokenType::SlashEq, self.line, self.col);
+                    self.advance();
+                    self.advance();
                 } else {
                     self.add_token_advance(TokenType::Slash);
                 }

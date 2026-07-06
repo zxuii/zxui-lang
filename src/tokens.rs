@@ -23,6 +23,10 @@ pub enum TokenType {
     Minus,
     Asterisk,
     Slash,
+    PlusEq,
+    MinusEq,
+    AsteriskEq,
+    SlashEq,
     Semicolon,
     Lparen,
     Rparen,
@@ -103,6 +107,18 @@ impl std::fmt::Display for TokenType {
             }
             TokenType::Slash => {
                 write!(f, "/")
+            }
+            TokenType::PlusEq => {
+                write!(f, "+=")
+            }
+            TokenType::MinusEq => {
+                write!(f, "-=")
+            }
+            TokenType::AsteriskEq => {
+                write!(f, "*=")
+            }
+            TokenType::SlashEq => {
+                write!(f, "/=")
             }
             TokenType::Semicolon => {
                 write!(f, ";")

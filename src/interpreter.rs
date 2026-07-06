@@ -409,6 +409,46 @@ impl Interpreter {
                 Ok(Signal::None)
             }
 
+            Stmt::CompAssign { target, op, expr } => {
+                let rhs = self.eval_expr(expr)?;
+
+                match target {
+                    Expr::Identifier(name) => {
+                        let current = self.env.borrow().get(name.clone())?;
+                        let new_val = Self::apply_comp_op(current, op, rhs)?;
+                        self.env.borrow_mut().assign(name.clone(), new_val)?;
+                    }
+                    Expr::Index { target: arr_target, index } => {
+                        let var = self.eval_expr(arr_target)?;
+                        let i = self.eval_expr(index)?;
+                        match (var, i) {
+                            (Value::Array(arr), Value::Number(num)) => {
+                                if num >= 0.0 {
+                                    let i = num as usize;
+                                    if arr.borrow().len() > i {
+                                        let current = arr.borrow()[i].clone();
+                                        let new_val = Self::apply_comp_op(current, op, rhs)?;
+                                        arr.borrow_mut()[i] = new_val;
+                                    } else {
+                                        return Err(format!(
+                                            "index out of bounds. need index of {}, but only has {} indices.",
+                                            i,
+                                            arr.borrow().len()
+                                        ));
+                                    }
+                                } else {
+                                    return Err("index cannot be negatives number".into());
+                                }
+                            }
+                            (Value::Array(_), _) => return Err("index must be a number.".into()),
+                            _ => return Err("cannot indexing of non-array type.".into()),
+                        }
+                    }
+                    _ => return Err("invalid assignment target".into()),
+                }
+                Ok(Signal::None)
+            }
+
             Stmt::If {
                 expr,
                 block,
@@ -483,5 +523,31 @@ impl Interpreter {
             }
         }
         trace
+    }
+
+    fn apply_comp_op(current: Value, op: &BinOp, rhs: Value) -> Result<Value, String> {
+        match (current, rhs) {
+            (Value::Number(a), Value::Number(b)) => {
+                let result = match op {
+                    BinOp::Plus => a + b,
+                    BinOp::Minus => a - b,
+                    BinOp::Multiply => a * b,
+                    BinOp::Divide => {
+                        if b == 0.0 {
+                            return Err("division by zero".into());
+                        }
+                        a / b
+                    }
+                };
+                Ok(Value::Number(result))
+            }
+            (Value::String(a), Value::String(b)) if matches!(op, BinOp::Plus) => {
+                Ok(Value::String(a + &b))
+            }
+            (Value::String(a), Value::Number(b)) if matches!(op, BinOp::Multiply) => {
+                Ok(Value::String(a.repeat(b as usize)))
+            }
+            _ => Err("binary operation on unsupported type".into()),
+        }
     }
 }

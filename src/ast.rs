@@ -79,6 +79,11 @@ pub enum Stmt {
         target: Expr,
         expr: Expr,
     },
+    CompAssign {
+        target: Expr,
+        op: BinOp,
+        expr: Expr,
+    },
     Return(Expr),
     If {
         expr: Expr,

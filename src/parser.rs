@@ -139,7 +139,14 @@ impl Parser {
             }
             TokenType::Identifier(_) => {
                 let expr = self.parse_factor()?;
-                if self.ct.as_ref().unwrap().ty == TokenType::Equal {
+                if matches!(
+                    self.ct.as_ref().unwrap().ty,
+                    TokenType::Equal
+                        | TokenType::PlusEq
+                        | TokenType::MinusEq
+                        | TokenType::AsteriskEq
+                        | TokenType::SlashEq
+                ) {
                     self.parse_var_assign(expr)
                 } else {
                     Ok(Stmt::ExprStmt(expr))
@@ -258,9 +265,34 @@ impl Parser {
     }
 
     fn parse_var_assign(&mut self, target: Expr) -> Result<Stmt, String> {
-        self.consume(TokenType::Equal)?;
-        let expr = self.parse_expr()?;
-        Ok(Stmt::Assign { target, expr })
+        match self.ct.as_ref().unwrap().ty {
+            TokenType::Equal => {
+                self.consume(TokenType::Equal)?;
+                let expr = self.parse_expr()?;
+                Ok(Stmt::Assign { target, expr })
+            }
+            TokenType::PlusEq => {
+                self.consume(TokenType::PlusEq)?;
+                let expr = self.parse_expr()?;
+                Ok(Stmt::CompAssign { target, op: BinOp::Plus, expr })
+            }
+            TokenType::MinusEq => {
+                self.consume(TokenType::MinusEq)?;
+                let expr = self.parse_expr()?;
+                Ok(Stmt::CompAssign { target, op: BinOp::Minus, expr })
+            }
+            TokenType::AsteriskEq => {
+                self.consume(TokenType::AsteriskEq)?;
+                let expr = self.parse_expr()?;
+                Ok(Stmt::CompAssign { target, op: BinOp::Multiply, expr })
+            }
+            TokenType::SlashEq => {
+                self.consume(TokenType::SlashEq)?;
+                let expr = self.parse_expr()?;
+                Ok(Stmt::CompAssign { target, op: BinOp::Divide, expr })
+            }
+            _ => unreachable!("harusnya ini ga akan pernah tercapai sama sekali...")
+        }
     }
 
     fn parse_if_decl(&mut self) -> Result<Stmt, String> {
@@ -309,8 +341,8 @@ impl Parser {
     fn parse_break(&mut self) -> Result<Stmt, String> {
         self.consume(TokenType::Break)?;
         Ok(Stmt::Break)
-    }   
-    
+    }
+
     fn parse_continue(&mut self) -> Result<Stmt, String> {
         self.consume(TokenType::Continue)?;
         Ok(Stmt::Continue)
