@@ -26,6 +26,8 @@ pub enum TokenType {
     Rparen,
     Lbrace,
     Rbrace,
+    Lbracket,
+    Rbracket,
     Comma,
     Equal,
     EqEq, // ==
@@ -67,6 +69,8 @@ impl std::fmt::Display for TokenType {
             TokenType::Rparen => { write!(f, ")") }
             TokenType::Lbrace => { write!(f, "{{") }
             TokenType::Rbrace => { write!(f, "}}") }
+            TokenType::Lbracket => { write!(f, "[") }
+            TokenType::Rbracket => { write!(f, "]") }
             TokenType::Comma => { write!(f, ",") }
             TokenType::Equal => { write!(f, "=") }
             TokenType::EqEq => { write!(f, "==") }

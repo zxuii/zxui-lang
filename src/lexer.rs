@@ -112,6 +112,12 @@ impl Lexer {
         } else if self.ch == Some('}') {
             self.add_token_advance(TokenType::Rbrace);
             Ok(())
+        } else if self.ch == Some('[') {
+            self.add_token_advance(TokenType::Lbracket);
+            Ok(())
+        } else if self.ch == Some(']') {
+            self.add_token_advance(TokenType::Rbracket);
+            Ok(())
         } else if self.ch == Some(',') {
             self.add_token_advance(TokenType::Comma);
             Ok(())
