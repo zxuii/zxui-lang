@@ -344,7 +344,7 @@ impl Parser {
     }
 
     fn parse_term(&mut self) -> Result<Expr, String> {
-        let mut node = self.parse_factor()?;
+        let mut node = self.parse_unary()?;
         while matches!(
             self.ct.as_ref().unwrap().ty,
             TokenType::Asterisk | TokenType::Slash
@@ -355,18 +355,36 @@ impl Parser {
                 node = Expr::BinOp {
                     left: Box::new(node),
                     op: BinOp::Multiply,
-                    right: Box::new(self.parse_factor()?),
+                    right: Box::new(self.parse_unary()?),
                 };
             } else {
                 self.consume(TokenType::Slash)?;
                 node = Expr::BinOp {
                     left: Box::new(node),
                     op: BinOp::Divide,
-                    right: Box::new(self.parse_factor()?),
+                    right: Box::new(self.parse_unary()?),
                 };
             }
         }
         Ok(node)
+    }
+
+    fn parse_unary(&mut self) -> Result<Expr, String> {
+        match self.ct.as_ref().unwrap().ty.clone() {
+            TokenType::Plus => {
+                self.consume(TokenType::Plus)?;
+                Ok(Expr::Unary { op: UnaryOp::Plus, expr: Box::new(self.parse_unary()?) })
+            }
+            TokenType::Minus => {
+                self.consume(TokenType::Minus)?;
+                Ok(Expr::Unary { op: UnaryOp::Minus, expr: Box::new(self.parse_unary()?) })
+            }
+            TokenType::Bang => {
+                self.consume(TokenType::Bang)?;
+                Ok(Expr::Unary { op: UnaryOp::Not, expr: Box::new(self.parse_unary()?) })
+            }
+            _ => self.parse_factor(),
+        }
     }
 
     fn parse_factor(&mut self) -> Result<Expr, String> {
@@ -387,27 +405,6 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Result<Expr, String> {
         match self.ct.as_ref().unwrap().ty.clone() {
-            TokenType::Plus => {
-                self.consume(TokenType::Plus)?;
-                Ok(Expr::Unary {
-                    op: UnaryOp::Plus,
-                    expr: Box::new(self.parse_factor()?),
-                })
-            }
-            TokenType::Minus => {
-                self.consume(TokenType::Minus)?;
-                Ok(Expr::Unary {
-                    op: UnaryOp::Minus,
-                    expr: Box::new(self.parse_factor()?),
-                })
-            }
-            TokenType::Bang => {
-                self.consume(TokenType::Bang)?;
-                Ok(Expr::Unary {
-                    op: UnaryOp::Not,
-                    expr: Box::new(self.parse_factor()?),
-                })
-            }
             TokenType::Number(n) => {
                 self.consume(TokenType::Number(n))?;
                 Ok(Expr::Number(n))
@@ -441,18 +438,11 @@ impl Parser {
             _ => self.error(
                 None,
                 Some(vec![
-                    TokenType::Plus,
-                    TokenType::Minus,
-                    TokenType::Bang,
                     TokenType::Number(0.0),
                     TokenType::String("".to_string()),
                     TokenType::Lparen,
                     TokenType::Lbracket,
                     TokenType::Lbrace,
-                    TokenType::Fun,
-                    TokenType::Let,
-                    TokenType::While,
-                    TokenType::If,
                 ]),
             ),
         }
