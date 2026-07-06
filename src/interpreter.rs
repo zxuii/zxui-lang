@@ -247,7 +247,9 @@ impl Interpreter {
                                     break;
                                 }
                                 Ok(Signal::Break) | Ok(Signal::Continue) => {
-                                    unreachable!("Harusnya ini ga akan pernah tercapai karena sudah di handle di parser. jaga-jaga aja.")
+                                    unreachable!(
+                                        "Harusnya ini ga akan pernah tercapai karena sudah di handle di parser. jaga-jaga aja."
+                                    )
                                 }
                                 Ok(Signal::None) => {}
                                 Err(e) => {
@@ -355,9 +357,38 @@ impl Interpreter {
                 Ok(Signal::None)
             }
 
-            Stmt::Assign { name, expr } => {
+            Stmt::Assign { target, expr } => {
                 let val = self.eval_expr(expr)?;
-                self.env.borrow_mut().assign(name.clone(), val)?;
+                match target {
+                    Expr::Identifier(name) => {
+                        self.env.borrow_mut().assign(name.clone(), val)?;
+                    }
+                    Expr::Index { target, index } => {
+                        let var = self.eval_expr(target)?;
+                        let i = self.eval_expr(index)?;
+                        match (var, i) {
+                            (Value::Array(arr), Value::Number(num)) => {
+                                if num >= 0.0 {
+                                    let i = num as usize;
+                                    if arr.borrow().len() > i {
+                                        arr.borrow_mut()[i] = val;
+                                    } else {
+                                        return Err(format!(
+                                            "index out of bounds. need index of {}, but only has {} indices.",
+                                            i,
+                                            arr.borrow().len()
+                                        ));
+                                    }
+                                } else {
+                                    return Err("index cannot be negatives number".into());
+                                }
+                            }
+                            (Value::Array(_), _) => return Err("index must be a number.".into()),
+                            _ => return Err("cannot indexing of non-array type.".into()),
+                        }
+                    }
+                    _ => return Err("invalid assignment target".into()),
+                }
                 Ok(Signal::None)
             }
 
@@ -382,14 +413,12 @@ impl Interpreter {
             Stmt::While { expr, block } => {
                 loop {
                     match self.eval_expr(expr)? {
-                        Value::Boolean(true) => {
-                            match self.exec_block(block)? {
-                                Signal::Break => break,
-                                Signal::Continue => continue,
-                                Signal::None => {}
-                                ret @ Signal::Return(_) => return Ok(ret),
-                            }
-                        }
+                        Value::Boolean(true) => match self.exec_block(block)? {
+                            Signal::Break => break,
+                            Signal::Continue => continue,
+                            Signal::None => {}
+                            ret @ Signal::Return(_) => return Ok(ret),
+                        },
                         Value::Boolean(false) => break,
                         _ => return Err("while condition must be boolean".into()),
                     }

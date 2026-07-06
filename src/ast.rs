@@ -76,7 +76,7 @@ pub enum Stmt {
         expr: Expr,
     },
     Assign {
-        name: String,
+        target: Expr,
         expr: Expr,
     },
     Return(Expr),
