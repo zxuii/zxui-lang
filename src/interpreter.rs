@@ -31,6 +31,8 @@ impl Interpreter {
         self.env.borrow_mut().define("println".to_string(), Value::native_fun("println".to_string(), -1, Rc::new(native_println)));
         self.env.borrow_mut().define("print".to_string(), Value::native_fun("print".to_string(), -1, Rc::new(native_print)));
         self.env.borrow_mut().define("readline".to_string(), Value::native_fun("print".to_string(), -1, Rc::new(native_readline)));
+        self.env.borrow_mut().define("typeof".to_string(), Value::native_fun("typeof".to_string(), 1, Rc::new(native_typeof)));
+        self.env.borrow_mut().define("number".to_string(), Value::native_fun("number".to_string(), 1, Rc::new(native_number)));
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
