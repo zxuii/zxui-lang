@@ -50,6 +50,7 @@ impl Lexer {
 
         self.add_token(TokenType::Eof, self.line, self.col);
     }
+
     fn next_token(&mut self) {
         self.skip_whitespace();
 
@@ -57,107 +58,106 @@ impl Lexer {
             return;
         }
 
-        if self.ch == Some('+') {
-            self.add_token_advance(TokenType::Plus);
-        } else if self.ch == Some('-') {
-            self.add_token_advance(TokenType::Minus);
-        } else if self.ch == Some('*') {
-            self.add_token_advance(TokenType::Asterisk);
-        } else if self.ch == Some('/') {
-            if self.peek() == Some('/') {
-                self.advance();
-                self.advance();
-                while self.ch != Some('\n') && self.ch != Some('\r') {
-                    self.advance();
-                }
-            } else if self.peek() == Some('*') {
-                self.advance();
-                self.advance();
-                let mut depth = 1;
-                loop {
-                    if self.ch == None {
-                        self.error("unterminated block comment".to_string());
-                    }
-                    if self.ch == Some('/') && self.peek() == Some('*') {
-                        self.advance();
-                        self.advance();
-                        depth += 1;
-                    } else if self.ch == Some('*') && self.peek() == Some('/') {
-                        self.advance();
-                        self.advance();
-                        depth -= 1;
-                        if depth == 0 {
-                            break;
+        if let Some(ch) = self.ch {
+            match ch {
+                '+' => self.add_token_advance(TokenType::Plus),
+                '-' => self.add_token_advance(TokenType::Minus),
+                '*' => self.add_token_advance(TokenType::Asterisk),
+                '/' => {
+                    if self.peek() == Some('/') {
+                        self.advance(); // advance '/'
+                        self.advance(); // advance '/'
+                        while self.ch != Some('\n') && self.ch != None {
+                            self.advance(); // skip semua sampe newline
+                        }
+                    } else if self.peek() == Some('*') {
+                        self.advance(); // advance '/'
+                        self.advance(); // advance '*'
+                        let mut depth: usize = 1;
+                        loop {
+                            if self.ch == None {
+                                self.error("unterminated block comment".to_string());
+                            }
+                            if self.ch == Some('/') && self.peek() == Some('*') {
+                                self.advance();
+                                self.advance();
+                                depth += 1;
+                            } else if self.ch == Some('*') && self.peek() == Some('/') {
+                                self.advance();
+                                self.advance();
+                                depth -= 1;
+                                if depth == 0 {
+                                    break;
+                                }
+                            } else {
+                                self.advance(); // skip semua sampe penutup
+                            }
                         }
                     } else {
-                        self.advance();
+                        self.add_token_advance(TokenType::Slash);
                     }
                 }
-            } else {
-                self.add_token_advance(TokenType::Slash);
+                ';' => self.add_token_advance(TokenType::Semicolon),
+                '(' => self.add_token_advance(TokenType::Lparen),
+                ')' => self.add_token_advance(TokenType::Rparen),
+                '{' => self.add_token_advance(TokenType::Lbrace),
+                '}' => self.add_token_advance(TokenType::Rbrace),
+                '[' => self.add_token_advance(TokenType::Lbracket),
+                ']' => self.add_token_advance(TokenType::Rbracket),
+                ',' => self.add_token_advance(TokenType::Comma),
+                '=' => {
+                    if self.peek() == Some('=') {
+                        self.add_token(TokenType::EqEq, self.line, self.col);
+                        self.advance();
+                        self.advance();
+                    } else {
+                        self.add_token_advance(TokenType::Equal);
+                    }
+                }
+                '<' => {
+                    if self.peek() == Some('=') {
+                        self.add_token(TokenType::LtEq, self.line, self.col);
+                        self.advance();
+                        self.advance();
+                    } else {
+                        self.add_token_advance(TokenType::Lt);
+                    }
+                }
+                '>' => {
+                    if self.peek() == Some('=') {
+                        self.add_token(TokenType::GtEq, self.line, self.col);
+                        self.advance();
+                        self.advance();
+                    } else {
+                        self.add_token_advance(TokenType::Gt);
+                    }
+                }
+                '!' => {
+                    if self.peek() == Some('=') {
+                        self.add_token(TokenType::BangEq, self.line, self.col);
+                        self.advance();
+                        self.advance();
+                    } else {
+                        self.add_token_advance(TokenType::Bang);
+                    }
+                }
+                '"' => self.parse_string(),
+                _ => {
+                    if self.is_alpha() {
+                        self.parse_ident_or_key();
+                    } else if self.is_int(self.ch) {
+                        self.parse_number();
+                    } else {
+                        let mut c = String::new();
+                        if self.ch.is_none() {
+                            c.push_str("unknown");
+                        } else {
+                            c.push(self.ch.unwrap())
+                        }
+                        self.error(format!("unexpected character '{}'", c))
+                    }
+                }
             }
-        } else if self.ch == Some(';') {
-            self.add_token_advance(TokenType::Semicolon);
-        } else if self.ch == Some('(') {
-            self.add_token_advance(TokenType::Lparen);
-        } else if self.ch == Some(')') {
-            self.add_token_advance(TokenType::Rparen);
-        } else if self.ch == Some('{') {
-            self.add_token_advance(TokenType::Lbrace);
-        } else if self.ch == Some('}') {
-            self.add_token_advance(TokenType::Rbrace);
-        } else if self.ch == Some('[') {
-            self.add_token_advance(TokenType::Lbracket);
-        } else if self.ch == Some(']') {
-            self.add_token_advance(TokenType::Rbracket);
-        } else if self.ch == Some(',') {
-            self.add_token_advance(TokenType::Comma);
-        } else if self.ch == Some('=') {
-            if self.peek() == Some('=') {
-                self.add_token(TokenType::EqEq, self.line, self.col);
-                self.advance();
-                self.advance();
-            } else {
-                self.add_token_advance(TokenType::Equal);
-            }
-        } else if self.ch == Some('<') {
-            if self.peek() == Some('=') {
-                self.add_token(TokenType::LtEq, self.line, self.col);
-                self.advance();
-                self.advance();
-            } else {
-                self.add_token_advance(TokenType::Lt);
-            }
-        } else if self.ch == Some('>') {
-            if self.peek() == Some('=') {
-                self.add_token(TokenType::GtEq, self.line, self.col);
-                self.advance();
-                self.advance();
-            } else {
-                self.add_token_advance(TokenType::Gt);
-            }
-        } else if self.ch == Some('!') {
-            if self.peek() == Some('=') {
-                self.add_token(TokenType::BangEq, self.line, self.col);
-                self.advance();
-                self.advance();
-            } else {
-                self.add_token_advance(TokenType::Bang);
-            }
-        } else if self.is_alpha() {
-            self.parse_ident_or_key();
-        } else if self.is_int(self.ch) {
-            self.parse_number();
-        } else if self.ch == Some('"') {
-            self.parse_string();
-        } else {
-            let mut c = String::new();
-            if self.ch.is_none() {
-                c.push_str("unknown");
-            } else {
-                c.push(self.ch.unwrap())
-            }
-            self.error(format!("unexpected character '{}'", c))
         }
     }
 
@@ -177,6 +177,7 @@ impl Lexer {
 
         self.pos += 1
     }
+
     fn skip_whitespace(&mut self) {
         while self.ch == Some(' ')
             || self.ch == Some('\n')
@@ -186,9 +187,11 @@ impl Lexer {
             self.advance()
         }
     }
+
     fn add_token(&mut self, ty: TokenType, line: usize, col: usize) {
         self.tokens.push(Token::new(ty, line, col))
     }
+
     fn add_token_advance(&mut self, ty: TokenType) {
         self.add_token(ty, self.line, self.col);
         self.advance()
@@ -200,7 +203,7 @@ impl Lexer {
 
     fn parse_number(&mut self) {
         let start_line = self.line;
-        let start_col = self.line;
+        let start_col = self.col;
         let mut num = String::new();
 
         while self.is_int(self.ch) {
