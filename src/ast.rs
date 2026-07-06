@@ -95,5 +95,7 @@ pub enum Stmt {
         params: Vec<String>,
         body: Vec<Stmt>,
     },
+    Break,
+    Continue,
     Block(Vec<Stmt>),
 }

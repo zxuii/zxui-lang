@@ -6,7 +6,9 @@ pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
     ct: Option<Token>,
+
     fun_counter: usize,
+    loop_counter: usize,
 }
 
 impl Parser {
@@ -17,6 +19,7 @@ impl Parser {
             pos: 0,
             ct: None,
             fun_counter: 0,
+            loop_counter: 0,
         };
         parser.advance();
         parser
@@ -149,6 +152,20 @@ impl Parser {
             }
             TokenType::If => self.parse_if_decl(),
             TokenType::While => self.parse_while(),
+            TokenType::Break => {
+                if self.loop_counter > 0 {
+                    self.parse_break()
+                } else {
+                    self.error(Some("break statement must be inside some loop."), None)
+                }
+            }
+            TokenType::Continue => {
+                if self.loop_counter > 0 {
+                    self.parse_continue()
+                } else {
+                    self.error(Some("continue statement must be inside some loop."), None)
+                }
+            }
             _ => Ok(Stmt::ExprStmt(self.parse_expr()?)),
         }
     }
@@ -271,9 +288,21 @@ impl Parser {
         let expr = self.parse_expr()?;
         // self.consume(TokenType::Rparen)?;
         self.consume(TokenType::Lbrace)?;
+        self.loop_counter += 1;
         let block = self.parse_block()?;
+        self.loop_counter -= 1;
         self.consume(TokenType::Rbrace)?;
         Ok(Stmt::While { expr, block })
+    }
+
+    fn parse_break(&mut self) -> Result<Stmt, String> {
+        self.consume(TokenType::Break)?;
+        Ok(Stmt::Break)
+    }   
+    
+    fn parse_continue(&mut self) -> Result<Stmt, String> {
+        self.consume(TokenType::Continue)?;
+        Ok(Stmt::Continue)
     }
 
     fn parse_expr(&mut self) -> Result<Expr, String> {

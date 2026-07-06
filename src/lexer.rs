@@ -307,6 +307,8 @@ impl Lexer {
             "if" => TokenType::If,
             "else" => TokenType::Else,
             "while" => TokenType::While,
+            "break" => TokenType::Break,
+            "continue" => TokenType::Continue,
             _ => TokenType::Identifier(ident.clone()),
         };
         self.add_token(ty, start_line, start_col)

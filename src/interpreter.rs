@@ -19,6 +19,13 @@ impl CallFrame {
     }
 }
 
+pub enum Signal {
+    None,
+    Return(Option<Value>),
+    Continue,
+    Break,
+}
+
 pub struct Interpreter {
     env: Rc<RefCell<Environment>>,
     call_stack: Rc<RefCell<Vec<CallFrame>>>,
@@ -223,11 +230,14 @@ impl Interpreter {
                         let mut error = None;
                         for stmt in &body {
                             match interp.exec_stmt(stmt) {
-                                Ok(Some(val)) => {
-                                    return_val = val;
+                                Ok(Signal::Return(val)) => {
+                                    return_val = val.unwrap_or(Value::Null);
                                     break;
                                 }
-                                Ok(None) => {}
+                                Ok(Signal::Break) | Ok(Signal::Continue) => {
+                                    unreachable!("Harusnya ini ga akan pernah tercapai karena sudah di handle di parser. jaga-jaga aja.")
+                                }
+                                Ok(Signal::None) => {}
                                 Err(e) => {
                                     error = Some(e);
                                     break;
@@ -285,29 +295,28 @@ impl Interpreter {
         }
     }
 
-    fn exec_stmts(&mut self, stmts: &[Stmt]) -> Result<Option<Value>, String> {
-        let mut ret = None;
+    fn exec_stmts(&mut self, stmts: &[Stmt]) -> Result<Signal, String> {
         for stmt in stmts {
-            ret = self.exec_stmt(stmt)?;
-            if ret.is_some() {
-                break;
+            let signal = self.exec_stmt(stmt)?;
+            if !matches!(signal, Signal::None) {
+                return Ok(signal);
             }
         }
-        Ok(ret)
+        Ok(Signal::None)
     }
 
-    fn exec_block(&mut self, stmts: &[Stmt]) -> Result<Option<Value>, String> {
+    fn exec_block(&mut self, stmts: &[Stmt]) -> Result<Signal, String> {
         let child = Environment::new_enclosing(Some(Rc::clone(&self.env)));
         let prev = Rc::clone(&self.env);
         self.env = Rc::new(RefCell::new(child));
 
-        let ret = self.exec_stmts(stmts)?;
+        let signal = self.exec_stmts(stmts);
 
         self.env = prev;
-        Ok(ret)
+        signal
     }
 
-    pub fn exec_stmt(&mut self, stmt: &Stmt) -> Result<Option<Value>, String> {
+    pub fn exec_stmt(&mut self, stmt: &Stmt) -> Result<Signal, String> {
         match stmt {
             Stmt::Program(stmts) => {
                 let ret = self.exec_stmts(stmts)?;
@@ -322,13 +331,13 @@ impl Interpreter {
             Stmt::Let { name, expr } => {
                 let val = self.eval_expr(expr)?;
                 self.env.borrow_mut().define(name.clone(), val);
-                Ok(None)
+                Ok(Signal::None)
             }
 
             Stmt::Assign { name, expr } => {
                 let val = self.eval_expr(expr)?;
                 self.env.borrow_mut().assign(name.clone(), val)?;
-                Ok(None)
+                Ok(Signal::None)
             }
 
             Stmt::If {
@@ -342,7 +351,7 @@ impl Interpreter {
                     } else if let Some(else_stmts) = else_block {
                         self.exec_block(else_stmts)
                     } else {
-                        Ok(None)
+                        Ok(Signal::None)
                     }
                 }
 
@@ -353,26 +362,31 @@ impl Interpreter {
                 loop {
                     match self.eval_expr(expr)? {
                         Value::Boolean(true) => {
-                            let ret = self.exec_block(block)?;
-                            if ret.is_some() {
-                                return Ok(ret);
+                            match self.exec_block(block)? {
+                                Signal::Break => break,
+                                Signal::Continue => continue,
+                                Signal::None => {}
+                                ret @ Signal::Return(_) => return Ok(ret),
                             }
                         }
                         Value::Boolean(false) => break,
                         _ => return Err("while condition must be boolean".into()),
                     }
                 }
-                Ok(None)
+                Ok(Signal::None)
             }
 
             Stmt::Return(expr) => {
                 let val = self.eval_expr(expr)?;
-                Ok(Some(val))
+                Ok(Signal::Return(Some(val)))
             }
+
+            Stmt::Break => Ok(Signal::Break),
+            Stmt::Continue => Ok(Signal::Continue),
 
             Stmt::ExprStmt(expr) => {
                 self.eval_expr(expr)?;
-                Ok(None)
+                Ok(Signal::None)
             }
 
             Stmt::FunDecl { name, params, body } => {
@@ -383,7 +397,7 @@ impl Interpreter {
                     closure: Rc::clone(&self.env),
                 };
                 self.env.borrow_mut().define(name.clone(), fun);
-                Ok(None)
+                Ok(Signal::None)
             }
         }
     }
