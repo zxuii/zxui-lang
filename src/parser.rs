@@ -101,52 +101,6 @@ impl Parser {
         }
     }
 
-    // program     = "program" , block ;
-    // block       = { statement , [ ";" ] } ;
-
-    // statement   = fun_decl
-    //             | var_decl
-    //             | "{" , block , "}"
-    //             | assignment_or_expr
-    //             | return_stmt
-    //             | if_stmt
-    //             | while_stmt
-    //             | "break"
-    //             | "continue" ;
-
-    // fun_decl    = "fun" , identifier , "(" , params , ")" , "{" , block , "}" ;
-    // var_decl    = "let" , identifier , "=" , expr ;
-    // return_stmt = "return" , [ expr ] ;
-    // if_stmt     = "if" , expr , "{" , block , "}" ,
-    //               [ "else" , ( if_stmt | "{" , block , "}" ) ] ;
-    // while_stmt  = "while" , expr , "{" , block , "}" ;
-
-    // assignment_or_expr
-    //             = factor , [ ( "=" | "+=" | "-=" | "*=" | "/=" ) , expr ] ;
-
-    // expr        = logical_and , { "or" , logical_and } ;
-    // logical_and = comparison , { "and" , comparison } ;
-    // comparison  = additive , { ( "<" | ">" | "<=" | ">=" | "==" | "!=" ) , additive } ;
-    // additive    = term , { ( "+" | "-" ) , term } ;
-    // term        = unary , { ( "*" | "/" ) , unary } ;
-    // unary       = ( "+" | "-" | "!" ) , unary
-    //             | factor ;
-    // factor      = primary , { call_suffix | index_suffix } ;
-    // call_suffix = "(" , args , ")" ;
-    // index_suffix= "[" , expr , "]" ;
-
-    // primary     = number
-    //             | string
-    //             | "null"
-    //             | "true"
-    //             | "false"
-    //             | "(" , expr , ")"
-    //             | "[" , array_literal , "]"
-    //             | identifier ;
-
-    // args           = [ expr , { "," , expr } ] ;
-    // array_literal  = [ expr , { "," , expr } ] ;
-    // params         = [ identifier , { "," , identifier } ] ;
     pub fn parse(&mut self) -> Result<Stmt, String> {
         self.parse_program()
     }
