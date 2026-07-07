@@ -501,12 +501,25 @@ impl Interpreter {
 
             Stmt::For { name, expr, block } => {
                 let val = self.eval_expr(expr)?;
-                let arr = match val {
-                    Value::Array(arr) => arr,
-                    _ => return Err("for-in loop requires an array.".into()),
-                };
 
-                let items = arr.borrow().clone();
+                let items: Vec<Value> = match val {
+                    Value::Array(arr) => arr.borrow().clone(),
+
+                    Value::String(s) => s.chars().map(|c| Value::String(c.to_string())).collect(),
+
+                    Value::Map(map) => map
+                        .borrow()
+                        .iter()
+                        .map(|(k, v)| {
+                            let mut pair = indexmap::IndexMap::new();
+                            pair.insert("key".to_string(), Value::String(k.clone()));
+                            pair.insert("val".to_string(), v.clone());
+                            Value::Map(Rc::new(RefCell::new(pair)))
+                        })
+                        .collect(),
+
+                    _ => return Err("for-in loop requires an array, string, or map.".into()),
+                };
 
                 for item in items {
                     match self.exec_block_with(block, name, item)? {
