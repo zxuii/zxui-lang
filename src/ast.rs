@@ -35,6 +35,10 @@ pub enum Expr {
         target: Box<Expr>,
         index: Box<Expr>,
     },
+    Get {
+        target: Box<Expr>,
+        name: String,
+    },
     NoOp,
 }
 
