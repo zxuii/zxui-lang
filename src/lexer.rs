@@ -133,6 +133,7 @@ impl Lexer {
             '[' => self.add_token_advance(TokenType::Lbracket),
             ']' => self.add_token_advance(TokenType::Rbracket),
             ',' => self.add_token_advance(TokenType::Comma),
+            '.' => self.add_token_advance(TokenType::Dot),
             '=' => {
                 if self.peek() == Some('=') {
                     self.add_token(TokenType::EqEq, self.line, self.col);

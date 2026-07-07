@@ -47,6 +47,7 @@ pub enum TokenType {
     BangEq, // !=
     And,    // and
     Or,     // or
+    Dot,    // .
 
     // Specials
     Eof,
@@ -181,6 +182,9 @@ impl std::fmt::Display for TokenType {
             }
             TokenType::Or => {
                 write!(f, "or")
+            }
+            TokenType::Dot => {
+                write!(f, ".")
             }
             TokenType::Eof => {
                 write!(f, "eof")
