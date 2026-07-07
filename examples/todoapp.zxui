@@ -17,8 +17,7 @@ fun tampilTodos() {
     if len(todos) == 0 {
         println("Belum ada todo!");
     } else {
-        let i = 0;
-        while i < len(todos) {
+        for i in range(len(todos)) {
             let todo = todos[i];
             let teks = todo[0];
             let selesai = todo[1];
@@ -27,7 +26,6 @@ fun tampilTodos() {
                 tanda = "[x]";
             }
             println(string(i + 1) + ". " + tanda + " " + teks);
-            i = i + 1;
         }
     }
 }
