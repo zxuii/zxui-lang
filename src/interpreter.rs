@@ -61,7 +61,7 @@ impl Interpreter {
         );
         self.env.borrow_mut().define(
             "readline".to_string(),
-            Value::native_fun("print".to_string(), -1, Rc::new(native_readline)),
+            Value::native_fun("readline".to_string(), -1, Rc::new(native_readline)),
         );
         self.env.borrow_mut().define(
             "typeof".to_string(),
@@ -395,7 +395,7 @@ impl Interpreter {
                 }
                 Ok(Signal::None)
             }
-            
+
             Stmt::If {
                 expr,
                 block,
