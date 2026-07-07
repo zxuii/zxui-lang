@@ -275,24 +275,40 @@ impl Parser {
             TokenType::PlusEq => {
                 self.consume(TokenType::PlusEq)?;
                 let expr = self.parse_expr()?;
-                Ok(Stmt::CompAssign { target, op: BinOp::Plus, expr })
+                Ok(Stmt::CompAssign {
+                    target,
+                    op: BinOp::Plus,
+                    expr,
+                })
             }
             TokenType::MinusEq => {
                 self.consume(TokenType::MinusEq)?;
                 let expr = self.parse_expr()?;
-                Ok(Stmt::CompAssign { target, op: BinOp::Minus, expr })
+                Ok(Stmt::CompAssign {
+                    target,
+                    op: BinOp::Minus,
+                    expr,
+                })
             }
             TokenType::AsteriskEq => {
                 self.consume(TokenType::AsteriskEq)?;
                 let expr = self.parse_expr()?;
-                Ok(Stmt::CompAssign { target, op: BinOp::Multiply, expr })
+                Ok(Stmt::CompAssign {
+                    target,
+                    op: BinOp::Multiply,
+                    expr,
+                })
             }
             TokenType::SlashEq => {
                 self.consume(TokenType::SlashEq)?;
                 let expr = self.parse_expr()?;
-                Ok(Stmt::CompAssign { target, op: BinOp::Divide, expr })
+                Ok(Stmt::CompAssign {
+                    target,
+                    op: BinOp::Divide,
+                    expr,
+                })
             }
-            _ => unreachable!("harusnya ini ga akan pernah tercapai sama sekali...")
+            _ => unreachable!("harusnya ini ga akan pernah tercapai sama sekali..."),
         }
     }
 

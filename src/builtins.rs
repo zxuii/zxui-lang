@@ -1,6 +1,10 @@
 use crate::object::Value;
 
-use std::{cell::RefCell, io::{self, Write}, rc::Rc};
+use std::{
+    cell::RefCell,
+    io::{self, Write},
+    rc::Rc,
+};
 
 pub fn native_println(args: Vec<Value>) -> Result<Value, String> {
     let _ = native_print(args);
@@ -82,13 +86,23 @@ pub fn native_string(args: Vec<Value>) -> Result<Value, String> {
         Value::Number(num) => Ok(Value::String(format!("{}", num))),
         Value::Boolean(b) => Ok(Value::String(format!("{}", b))),
         Value::Array(arr) => Ok(Value::String(format!("{:?}", arr))),
-        Value::Function { name, params: _, body: _, closure: _ } => Ok(Value::String(format!("[fun {name}]"))),
-        Value::NativeFunction { name, arity: _, fun: _ } => Ok(Value::String(format!("[fun {name}]"))),
+        Value::Function {
+            name,
+            params: _,
+            body: _,
+            closure: _,
+        } => Ok(Value::String(format!("[fun {name}]"))),
+        Value::NativeFunction {
+            name,
+            arity: _,
+            fun: _,
+        } => Ok(Value::String(format!("[fun {name}]"))),
         Value::Null => Ok(Value::String("null".to_string())),
-        _ => Err(format!("string(): cannot convert string type to string itself."))
+        _ => Err(format!(
+            "string(): cannot convert string type to string itself."
+        )),
     }
 }
-
 
 pub fn native_push(args: Vec<Value>) -> Result<Value, String> {
     match &args[0] {
@@ -97,20 +111,17 @@ pub fn native_push(args: Vec<Value>) -> Result<Value, String> {
             Ok(Value::Null)
         }
 
-        _ => Err(format!("push(): first argument must be array."))
+        _ => Err(format!("push(): first argument must be array.")),
     }
 }
 
 pub fn native_pop(args: Vec<Value>) -> Result<Value, String> {
     match &args[0] {
-        Value::Array(arr) => {
-            match arr.borrow_mut().pop() {
-                Some(val) => Ok(val),
-                None => Err(format!("pop(): cannot popping empty array."))
-            }
-            
-        }
-        _ => Err(format!("pop(): cannot popping non-array type."))
+        Value::Array(arr) => match arr.borrow_mut().pop() {
+            Some(val) => Ok(val),
+            None => Err(format!("pop(): cannot popping empty array.")),
+        },
+        _ => Err(format!("pop(): cannot popping non-array type.")),
     }
 }
 
@@ -162,7 +173,8 @@ pub fn native_range(args: Vec<Value>) -> Result<Value, String> {
         } else {
             return Err(format!(
                 "range(): argument {} must be a number, got '{}'.",
-                i + 1, arg
+                i + 1,
+                arg
             ));
         }
     }

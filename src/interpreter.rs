@@ -345,11 +345,18 @@ impl Interpreter {
         signal
     }
 
-    fn exec_block_with(&mut self, stmts: &[Stmt], bind_name: &str, bind_val: Value) -> Result<Signal, String> {
+    fn exec_block_with(
+        &mut self,
+        stmts: &[Stmt],
+        bind_name: &str,
+        bind_val: Value,
+    ) -> Result<Signal, String> {
         let child = Environment::new_enclosing(Some(Rc::clone(&self.env)));
         let prev = Rc::clone(&self.env);
         self.env = Rc::new(RefCell::new(child));
-        self.env.borrow_mut().define(bind_name.to_string(), bind_val);
+        self.env
+            .borrow_mut()
+            .define(bind_name.to_string(), bind_val);
 
         let signal = self.exec_stmts(stmts);
 
