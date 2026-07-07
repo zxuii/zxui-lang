@@ -578,6 +578,26 @@ impl Parser {
                     };
                 }
 
+                TokenType::Dot => {
+                    self.consume(TokenType::Dot)?;
+                    let name = match &self.ct.as_ref().unwrap().ty {
+                        TokenType::Identifier(n) => n.clone(),
+                        _ => {
+                            return self.error(
+                                Some("Expected property name after '.'."),
+                                Some(vec![TokenType::Identifier(String::new())]),
+                            );
+                        }
+                    };
+
+                    self.consume(TokenType::Identifier(name.clone()))?;
+
+                    expr = Expr::Get {
+                        target: Box::new(expr),
+                        name,
+                    }
+                }
+
                 _ => break,
             }
         }

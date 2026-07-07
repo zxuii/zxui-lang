@@ -330,6 +330,14 @@ impl Interpreter {
                 let (arr, i) = self.resolve_array_index(target, index)?;
                 Ok(arr.borrow()[i].clone())
             }
+
+            Expr::Get { target, name } => {
+                let (map, key) = self.resolve_map_property(target, name)?;
+                match map.borrow().get(&key) {
+                    Some(val) => Ok(val.clone()),
+                    None => Err(format!("property '{}' does not exist on this object.", key)),
+                }
+            }
         }
     }
 
@@ -579,6 +587,19 @@ impl Interpreter {
             }
             (Value::Array(_), _) => Err("index must be a number.".into()),
             _ => Err("cannot indexing of non-array type.".into()),
+        }
+    }
+
+    fn resolve_map_property(
+        &self,
+        target: &Expr,
+        name: &str,
+    ) -> Result<(Rc<RefCell<IndexMap<String, Value>>>, String), String> {
+        let obj = self.eval_expr(target)?;
+
+        match obj {
+            Value::Map(map) => Ok((map, name.to_string())),
+            _ => Err(format!("cannot access property on non-map type.")),
         }
     }
 }
