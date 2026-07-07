@@ -4,6 +4,7 @@ use crate::environment::Environment;
 use crate::object::Value;
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 const MAX_DEPTH: usize = 1000; // 1 call di zxui sama kek 5-6 call di rust
@@ -108,6 +109,13 @@ impl Interpreter {
                     values.push(self.eval_expr(expr)?);
                 }
                 Ok(Value::Array(Rc::new(RefCell::new(values))))
+            }
+            Expr::Map(maps) => {
+                let mut key_values = HashMap::new();
+                for map in maps {
+                    key_values.insert(map.key.clone(), self.eval_expr(&map.val)?);
+                }
+                Ok(Value::Map(Rc::new(RefCell::new(key_values))))
             }
             Expr::Null => Ok(Value::Null),
             Expr::NoOp => Ok(Value::Null),

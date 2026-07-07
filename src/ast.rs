@@ -6,6 +6,7 @@ pub enum Expr {
     Boolean(bool),
     Null,
     Array(Vec<Expr>),
+    Map(Vec<Map>),
     Unary {
         op: UnaryOp,
         expr: Box<Expr>,
@@ -35,6 +36,12 @@ pub enum Expr {
         index: Box<Expr>,
     },
     NoOp,
+}
+
+#[derive(Debug, Clone)]
+pub struct Map {
+    pub key: String,
+    pub val: Expr,
 }
 
 #[derive(Debug, Clone)]

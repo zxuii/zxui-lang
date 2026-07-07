@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, collections::HashMap};
 
 use crate::{ast::Stmt, environment::Environment};
 
@@ -9,6 +9,7 @@ pub enum Value {
     Boolean(bool),
     String(String),
     Array(Rc<RefCell<Vec<Value>>>),
+    Map(Rc<RefCell<HashMap<String, Value>>>),
     Function {
         name: String,
         params: Vec<String>,
@@ -30,6 +31,7 @@ impl std::fmt::Display for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(str) => write!(f, "{}", str),
             Value::Array(vec) => write!(f, "{:?}", vec.borrow()),
+            Value::Map(vec) => write!(f, "{:?}", vec.borrow()),
             Value::Function {
                 name,
                 params: _,
@@ -49,6 +51,7 @@ impl std::fmt::Debug for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(str) => write!(f, "{}", str),
             Value::Array(vec) => write!(f, "{:?}", vec),
+            Value::Map(vec) => write!(f, "{:?}", vec.borrow()),
             Value::Function {
                 name,
                 params: _,

@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, UnaryOp};
+use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Map, Stmt, UnaryOp};
 use crate::tokens::{Token, TokenType};
 
 pub struct Parser {
@@ -224,6 +224,36 @@ impl Parser {
             }
         }
         Ok(args)
+    }
+
+    // { name = Value, anyname = Value, }
+
+    fn parse_key_value(&mut self) -> Result<Map, String> {
+        let key = match &self.ct.as_ref().unwrap().ty {
+            TokenType::Identifier(n) => n.clone(),
+            _ => return self.error(None, Some(vec![TokenType::Identifier(String::new())])),
+        };
+        self.consume(TokenType::Identifier(key.clone()))?;
+        self.consume(TokenType::Equal)?;
+        let val = self.parse_expr()?;
+        Ok(Map { key, val })
+    }
+
+    fn parse_map_literal(&mut self) -> Result<Vec<Map>, String> {
+        let mut map = vec![];
+
+        if self.ct.as_ref().unwrap().ty != TokenType::Rbrace {
+            map.push(self.parse_key_value()?);
+            while self.ct.as_ref().unwrap().ty == TokenType::Comma {
+                self.consume(TokenType::Comma)?;
+                if self.ct.as_ref().unwrap().ty == TokenType::Rbrace {
+                    break;
+                }
+                map.push(self.parse_key_value()?);
+            }
+        }
+
+        Ok(map)
     }
 
     fn parse_params(&mut self) -> Result<Vec<String>, String> {
@@ -587,6 +617,12 @@ impl Parser {
                 self.consume(TokenType::Lbracket)?;
                 let node = Expr::Array(self.parse_array_literal()?);
                 self.consume(TokenType::Rbracket)?;
+                Ok(node)
+            }
+            TokenType::Lbrace => {
+                self.consume(TokenType::Lbrace)?;
+                let node = Expr::Map(self.parse_map_literal()?);
+                self.consume(TokenType::Rbrace)?;
                 Ok(node)
             }
             TokenType::Identifier(name) => {
