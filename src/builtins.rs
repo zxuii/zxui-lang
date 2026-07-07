@@ -20,7 +20,6 @@ pub fn native_print(args: Vec<Value>) -> Result<Value, String> {
 }
 
 pub fn native_readline(args: Vec<Value>) -> Result<Value, String> {
-    // kita expect kalau args yang dibutuhkan sudah pasti didapatkan
     let mut input = String::new();
 
     print!("{}", args[0]);
@@ -75,6 +74,8 @@ pub fn native_number(args: Vec<Value>) -> Result<Value, String> {
             }
         }
 
+        Value::Number(num) => Ok(Value::Number(*num)),
+
         _ => Err(format!(
             "number(): type '{}' cannot be converted to number.",
             args[0]
@@ -128,7 +129,14 @@ pub fn native_remove(args: Vec<Value>) -> Result<Value, String> {
             }
             _ => Err("remove(): second argument must be a number.".to_string()),
         },
-        _ => Err("remove(): first argument must be array.".to_string()),
+        Value::Map(map) => match &args[1] {
+            Value::String(key) => match map.borrow_mut().shift_remove(key) {
+                Some(val) => Ok(val),
+                None => Ok(Value::Null),
+            },
+            _ => Err("remove(): second argument must be a string key when removing from map.".to_string()),
+        },
+        _ => Err("remove(): first argument must be array or map.".to_string()),
     }
 }
 
@@ -136,7 +144,8 @@ pub fn native_len(args: Vec<Value>) -> Result<Value, String> {
     match &args[0] {
         Value::Array(arr) => Ok(Value::Number(arr.borrow().len() as f64)),
         Value::String(s) => Ok(Value::Number(s.chars().count() as f64)),
-        _ => Err("len(): argument must be an array or string.".to_string()),
+        Value::Map(map) => Ok(Value::Number(map.borrow().len() as f64)),
+        _ => Err("len(): argument must be an array, string, or map.".to_string()),
     }
 }
 
