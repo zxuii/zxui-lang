@@ -1,5 +1,5 @@
-use std::{cell::RefCell, rc::Rc};
 use indexmap::IndexMap;
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{ast::Stmt, environment::Environment};
 
@@ -41,7 +41,13 @@ impl Value {
             Value::Null => write!(f, "null"),
             Value::Number(num) => write!(f, "{}", num),
             Value::Boolean(b) => write!(f, "{}", b),
-            Value::String(str) => write!(f, "\"{}\"", str),
+            Value::String(str) => {
+                if indent == 0 {
+                    write!(f, "{}", str)
+                } else {
+                    write!(f, "\"{}\"", str)
+                }
+            }
             Value::Array(vec_ref) => {
                 let vec = vec_ref.borrow();
                 if vec.is_empty() {
@@ -78,10 +84,7 @@ impl Value {
             }
             Value::Function {
                 name,
-                params: _,
-                body: _,
-                closure: _,
-            } => write!(f, "[fun {name}]"),
+         ..} => write!(f, "[fun {name}]"),
             Value::NativeFunction { name, .. } => write!(f, "[native fun {name}]"),
         }
     }
