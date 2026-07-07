@@ -32,7 +32,19 @@ impl std::fmt::Display for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(str) => write!(f, "{}", str),
             Value::Array(vec) => write!(f, "{:?}", vec.borrow()),
-            Value::Map(vec) => write!(f, "{:?}", vec.borrow()),
+            Value::Map(map_ref) => {
+                let map = map_ref.borrow();
+                write!(f, "{{ ")?;
+                
+                for (i, (key, val)) in map.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{} = {}", key, val)?;
+                }
+                
+                write!(f, " }}")
+            }
             Value::Function {
                 name,
                 params: _,
@@ -52,7 +64,19 @@ impl std::fmt::Debug for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::String(str) => write!(f, "{}", str),
             Value::Array(vec) => write!(f, "{:?}", vec),
-            Value::Map(vec) => write!(f, "{:?}", vec.borrow()),
+             Value::Map(map_ref) => {
+                let map = map_ref.borrow();
+                write!(f, "{{ ")?;
+                
+                for (i, (key, val)) in map.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{} = {}", key, val)?;
+                }
+                
+                write!(f, " }}")
+            }
             Value::Function {
                 name,
                 params: _,
