@@ -341,6 +341,18 @@ impl Interpreter {
         signal
     }
 
+    fn exec_block_with(&mut self, stmts: &[Stmt], bind_name: &str, bind_val: Value) -> Result<Signal, String> {
+        let child = Environment::new_enclosing(Some(Rc::clone(&self.env)));
+        let prev = Rc::clone(&self.env);
+        self.env = Rc::new(RefCell::new(child));
+        self.env.borrow_mut().define(bind_name.to_string(), bind_val);
+
+        let signal = self.exec_stmts(stmts);
+
+        self.env = prev;
+        signal
+    }
+
     pub fn exec_stmt(&mut self, stmt: &Stmt) -> Result<Signal, String> {
         match stmt {
             Stmt::Program(stmts) => {
@@ -425,6 +437,26 @@ impl Interpreter {
                         },
                         Value::Boolean(false) => break,
                         _ => return Err("while condition must be boolean".into()),
+                    }
+                }
+                Ok(Signal::None)
+            }
+
+            Stmt::For { name, expr, block } => {
+                let val = self.eval_expr(expr)?;
+                let arr = match val {
+                    Value::Array(arr) => arr,
+                    _ => return Err("for-in loop requires an array.".into()),
+                };
+
+                let items = arr.borrow().clone();
+
+                for item in items {
+                    match self.exec_block_with(block, name, item)? {
+                        Signal::Break => break,
+                        Signal::Continue => continue,
+                        Signal::None => {}
+                        ret @ Signal::Return(_) => return Ok(ret),
                     }
                 }
                 Ok(Signal::None)

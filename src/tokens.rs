@@ -17,6 +17,8 @@ pub enum TokenType {
     While,
     Break,
     Continue,
+    For,
+    In,
 
     // Symbols
     Plus,
@@ -95,6 +97,12 @@ impl std::fmt::Display for TokenType {
             }
             TokenType::Continue => {
                 write!(f, "continue")
+            }
+            TokenType::For => {
+                write!(f, "for")
+            }
+            TokenType::In => {
+                write!(f, "in")
             }
             TokenType::Plus => {
                 write!(f, "+")

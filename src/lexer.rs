@@ -337,6 +337,8 @@ impl Lexer {
             "while" => TokenType::While,
             "break" => TokenType::Break,
             "continue" => TokenType::Continue,
+            "for" => TokenType::For,
+            "in" => TokenType::In,
             _ => TokenType::Identifier(ident.clone()),
         };
         self.add_token(ty, start_line, start_col)

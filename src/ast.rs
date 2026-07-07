@@ -94,6 +94,11 @@ pub enum Stmt {
         expr: Expr,
         block: Vec<Stmt>,
     },
+    For {
+        name: String,
+        expr: Expr,
+        block: Vec<Stmt>,
+    },
     ExprStmt(Expr),
     FunDecl {
         name: String,

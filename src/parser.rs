@@ -161,6 +161,7 @@ impl Parser {
             }
             TokenType::If => self.parse_if_decl(),
             TokenType::While => self.parse_while(),
+            TokenType::For => self.parse_for(),
             TokenType::Break => {
                 if self.loop_counter > 0 {
                     self.parse_break()
@@ -346,6 +347,23 @@ impl Parser {
     fn parse_continue(&mut self) -> Result<Stmt, String> {
         self.consume(TokenType::Continue)?;
         Ok(Stmt::Continue)
+    }
+
+    fn parse_for(&mut self) -> Result<Stmt, String> {
+        self.consume(TokenType::For)?;
+        let name = match &self.ct.as_ref().unwrap().ty {
+            TokenType::Identifier(n) => n.clone(),
+            _ => return self.error(None, Some(vec![TokenType::Identifier(String::new())])),
+        };
+        self.consume(TokenType::Identifier(name.clone()))?;
+        self.consume(TokenType::In)?;
+        let expr = self.parse_expr()?;
+        self.consume(TokenType::Lbrace)?;
+        self.loop_counter += 1;
+        let block = self.parse_block()?;
+        self.loop_counter -= 1;
+        self.consume(TokenType::Rbrace)?;
+        Ok(Stmt::For { name, expr, block })
     }
 
     fn parse_expr(&mut self) -> Result<Expr, String> {
