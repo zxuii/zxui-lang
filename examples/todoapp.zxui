@@ -2,15 +2,15 @@ let todos = [];
 let running = true;
 
 fun tampilMenu() {
-    println("====================");
-    println("     TODO LIST      ");
-    println("====================");
-    println("1. Lihat todos");
-    println("2. Tambah todo");
-    println("3. Hapus todo");
+    println("===================="   );
+    println("     TODO LIST      "   );
+    println("===================="   );
+    println("1. Lihat todos"         );
+    println("2. Tambah todo"         );
+    println("3. Hapus todo"          );
     println("4. Tandai selesai/belum");
-    println("5. Keluar");
-    println("====================");
+    println("5. Keluar"              );
+    println("===================="   );
 }
 
 fun tampilTodos() {
