@@ -113,6 +113,10 @@ impl Interpreter {
             "hasKey".to_string(),
             Value::native_fun("hasKey".to_string(), 2, Rc::new(native_has_key)),
         );
+        self.env.borrow_mut().define(
+            "clear".to_string(),
+            Value::native_fun("clear".to_string(), 2, Rc::new(native_clear)),
+        );
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {

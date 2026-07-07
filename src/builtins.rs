@@ -240,3 +240,17 @@ pub fn native_has_key(args: Vec<Value>) -> Result<Value, String> {
         _ => Err("hasKey(): first argument must be a map.".to_string()),
     }
 }
+
+pub fn native_clear(args: Vec<Value>) -> Result<Value, String> {
+    match &args[0] {
+        Value::Map(map) => {
+            map.borrow_mut().clear();
+            Ok(Value::Null)
+        }
+        Value::Array(arr) => {
+            arr.borrow_mut().clear();
+            Ok(Value::Null)
+        }
+        _ => Err("clear(): argument must be a map or an array.".to_string()),
+    }
+}
