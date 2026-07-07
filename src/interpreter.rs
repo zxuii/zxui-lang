@@ -413,6 +413,15 @@ impl Interpreter {
                         let (arr, i) = self.resolve_array_index(target, index)?;
                         arr.borrow_mut()[i] = val;
                     }
+                    Expr::Get { target, name } => {
+                        let target_val = self.eval_expr(target)?;
+                        match target_val {
+                            Value::Map(map) => {
+                                map.borrow_mut().insert(name.clone(), val);
+                            }
+                            _ => return Err("cannot set property on non-map type.".into()),
+                        }
+                    }
                     _ => return Err("invalid assignment target".into()),
                 }
                 Ok(Signal::None)
