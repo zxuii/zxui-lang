@@ -1,4 +1,5 @@
-use std::{cell::RefCell, rc::Rc, collections::HashMap};
+use std::{cell::RefCell, rc::Rc};
+use indexmap::IndexMap;
 
 use crate::{ast::Stmt, environment::Environment};
 
@@ -9,7 +10,7 @@ pub enum Value {
     Boolean(bool),
     String(String),
     Array(Rc<RefCell<Vec<Value>>>),
-    Map(Rc<RefCell<HashMap<String, Value>>>),
+    Map(Rc<RefCell<IndexMap<String, Value>>>),
     Function {
         name: String,
         params: Vec<String>,

@@ -1,10 +1,11 @@
+use indexmap::IndexMap;
+
 use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, UnaryOp};
 use crate::builtins::*;
 use crate::environment::Environment;
 use crate::object::Value;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 const MAX_DEPTH: usize = 1000; // 1 call di zxui sama kek 5-6 call di rust
@@ -111,7 +112,7 @@ impl Interpreter {
                 Ok(Value::Array(Rc::new(RefCell::new(values))))
             }
             Expr::Map(maps) => {
-                let mut key_values = HashMap::new();
+                let mut key_values = IndexMap::new();
                 for map in maps {
                     key_values.insert(map.key.clone(), self.eval_expr(&map.val)?);
                 }
