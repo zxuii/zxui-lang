@@ -101,6 +101,14 @@ impl Interpreter {
             "range".to_string(),
             Value::native_fun("range".to_string(), -1, Rc::new(native_range)),
         );
+        self.env.borrow_mut().define(
+            "keys".to_string(),
+            Value::native_fun("keys".to_string(), -1, Rc::new(native_keys)),
+        );
+        self.env.borrow_mut().define(
+            "values".to_string(),
+            Value::native_fun("values".to_string(), -1, Rc::new(native_values)),
+        );
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {

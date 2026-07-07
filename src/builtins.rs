@@ -210,3 +210,23 @@ pub fn native_range(args: Vec<Value>) -> Result<Value, String> {
 
     Ok(Value::Array(Rc::new(RefCell::new(result))))
 }
+
+pub fn native_keys(args: Vec<Value>) -> Result<Value, String> {
+    match &args[0] {
+        Value::Map(map) => {
+            let keys: Vec<Value> = map.borrow().keys().map(|k| Value::String(k.clone())).collect();
+            Ok(Value::Array(Rc::new(RefCell::new(keys))))
+        }
+        _ => Err("keys(): argument must be a map.".to_string()),
+    }
+}
+
+pub fn native_values(args: Vec<Value>) -> Result<Value, String> {
+    match &args[0] {
+        Value::Map(map) => {
+            let values: Vec<Value> = map.borrow().values().cloned().collect();
+            Ok(Value::Array(Rc::new(RefCell::new(values))))
+        }
+        _ => Err("values(): argument must be a map.".to_string()),
+    }
+}
