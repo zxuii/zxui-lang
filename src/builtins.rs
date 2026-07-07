@@ -230,3 +230,13 @@ pub fn native_values(args: Vec<Value>) -> Result<Value, String> {
         _ => Err("values(): argument must be a map.".to_string()),
     }
 }
+
+pub fn native_has_key(args: Vec<Value>) -> Result<Value, String> {
+    match (&args[0], &args[1]) {
+        (Value::Map(map), Value::String(key)) => {
+            Ok(Value::Boolean(map.borrow().contains_key(key)))
+        }
+        (Value::Map(_), _) => Err("hasKey(): second argument must be a string key.".to_string()),
+        _ => Err("hasKey(): first argument must be a map.".to_string()),
+    }
+}

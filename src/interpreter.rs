@@ -103,11 +103,15 @@ impl Interpreter {
         );
         self.env.borrow_mut().define(
             "keys".to_string(),
-            Value::native_fun("keys".to_string(), -1, Rc::new(native_keys)),
+            Value::native_fun("keys".to_string(), 1, Rc::new(native_keys)),
         );
         self.env.borrow_mut().define(
             "values".to_string(),
-            Value::native_fun("values".to_string(), -1, Rc::new(native_values)),
+            Value::native_fun("values".to_string(), 1, Rc::new(native_values)),
+        );
+        self.env.borrow_mut().define(
+            "hasKey".to_string(),
+            Value::native_fun("hasKey".to_string(), 2, Rc::new(native_has_key)),
         );
     }
 
