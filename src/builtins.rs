@@ -87,6 +87,18 @@ pub fn native_string(args: Vec<Value>) -> Result<Value, String> {
     Ok(Value::String(format!("{}", args[0])))
 }
 
+pub fn native_boolean(args: Vec<Value>) -> Result<Value, String> {
+    match &args[0] {
+        Value::Boolean(b) => Ok(Value::Boolean(*b)),
+        Value::Null => Ok(Value::Boolean(false)),
+        Value::Number(num) => Ok(Value::Boolean(*num != 0.0)),
+        Value::String(str) => Ok(Value::Boolean(!str.is_empty())),
+        Value::Array(arr) => Ok(Value::Boolean(!arr.borrow().is_empty())),
+        Value::Map(map) => Ok(Value::Boolean(!map.borrow().is_empty())),
+        Value::Function { .. } | Value::NativeFunction { .. } => Ok(Value::Boolean(true)),
+    }
+}
+
 pub fn native_push(args: Vec<Value>) -> Result<Value, String> {
     match &args[0] {
         Value::Array(arr) => {

@@ -78,6 +78,10 @@ impl Interpreter {
             Value::native_fun("string".to_string(), 1, Rc::new(native_string)),
         );
         self.env.borrow_mut().define(
+            "boolean".to_string(),
+            Value::native_fun("boolean".to_string(), 1, Rc::new(native_boolean)),
+        );
+        self.env.borrow_mut().define(
             "push".to_string(),
             Value::native_fun("push".to_string(), 2, Rc::new(native_push)),
         );
