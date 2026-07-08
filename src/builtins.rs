@@ -54,6 +54,7 @@ type ClearBackgroundFn = unsafe extern "C" fn(color: u32);
 type DrawRectangleFn =
     unsafe extern "C" fn(pos_x: i32, pos_y: i32, width: i32, height: i32, color: u32);
 type IsKeyDownFn = unsafe extern "C" fn(key: i32) -> bool;
+type GetFrameTimeFn = unsafe extern "C" fn() -> f32;
 
 // untuk mempermudah buat struct
 pub struct Raylib {
@@ -66,6 +67,7 @@ pub struct Raylib {
     pub clear_background: ClearBackgroundFn,
     pub draw_rectangle: DrawRectangleFn,
     pub is_key_down: IsKeyDownFn,
+    pub get_frame_time: GetFrameTimeFn,
 }
 
 impl Raylib {
@@ -104,6 +106,10 @@ impl Raylib {
                 let sym: Symbol<IsKeyDownFn> = lib.get(b"IsKeyDown\0")?;
                 *sym
             };
+            let get_frame_time = {
+                let sym: Symbol<GetFrameTimeFn> = lib.get(b"GetFrameTime\0")?;
+                *sym
+            };
             Ok(Self {
                 _lib: lib,
                 init_window,
@@ -114,6 +120,7 @@ impl Raylib {
                 clear_background,
                 draw_rectangle,
                 is_key_down,
+                get_frame_time,
             })
         }
     }
@@ -175,6 +182,17 @@ pub fn raylib_close_window(raylib: Rc<Raylib>) -> Value {
         Rc::new(move |_| -> Result<Value, String> {
             unsafe { (raylib.close_window)() };
             Ok(Value::Null)
+        }),
+    )
+}
+
+pub fn raylib_get_frame_time(raylib: Rc<Raylib>) -> Value {
+    Value::native_fun(
+        "getFrameTime".to_string(),
+        0,
+        Rc::new(move |_| -> Result<Value, String> {
+            let val = unsafe { (raylib.get_frame_time)() };
+            Ok(Value::Number(val as f64))
         }),
     )
 }

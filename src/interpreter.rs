@@ -61,7 +61,6 @@ impl Interpreter {
         self.env
             .borrow_mut()
             .define("initWindow".to_string(), raylib_init_window(ray.clone()));
-
         self.env.borrow_mut().define(
             "windowShouldClose".to_string(),
             raylib_windows_should_close(ray.clone()),
@@ -76,20 +75,20 @@ impl Interpreter {
         self.env
             .borrow_mut()
             .define("closeWindow".to_string(), raylib_close_window(ray.clone()));
-
         self.env.borrow_mut().define(
             "clearBackground".to_string(),
             raylib_clear_background(ray.clone()),
         );
-
         self.env.borrow_mut().define(
             "drawRectangle".to_string(),
             raylib_draw_rectangle(ray.clone()),
         );
-
         self.env
             .borrow_mut()
-            .define("isKeyDown".to_string(), raylib_is_key_down(ray));
+            .define("isKeyDown".to_string(), raylib_is_key_down(ray.clone()));
+        self.env
+            .borrow_mut()
+            .define("getFrameTime".to_string(), raylib_get_frame_time(ray));
 
         // langs
         self.env.borrow_mut().define(
