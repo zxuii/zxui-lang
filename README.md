@@ -169,7 +169,9 @@ kalau sudah build:
 
 ## TODOs
 
-- [ ] Membuat portingan Raylib <-> Zxui agar bisa membuat game topdown sederhana di zxui dengan ini. 
+- [x] Membuat portingan Raylib <-> Zxui agar bisa membuat game topdown sederhana di zxui dengan ini. 
+
+Todonya udah selesai... aku butuh tujuan baru, aku berniat untuk mengubah struktur tree-walk yang sekarang menjadi bytecode based interpreter. tapi itu butuh rewrite yang cukup super banyak terhadap interpreternya itu sendiri, aku harus mengubah satu atau dua file penuh dan menambah beberapa file lainnya dari 0 lagi. yaa untuk sekarang karena aku udah malas, mungkin bisa aku lanjutkan setelah jeda seminggu atau dua minggu. soalnya aku udah lock-in ke proyek ini selama seminggu lebih sih. feedback dari kalian mungkin akan membantuku! TYSM buat yang udah baca ya..!
 
 ## Special thanks to
 
