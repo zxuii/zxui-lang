@@ -1,0 +1,11 @@
+initWindow(800, 600, "Top Down Zxui")
+
+while !windowShouldClose() {
+    beginDrawing()
+
+    // clearBackground("white")
+
+    endDrawing()
+}
+
+closeWindow()
