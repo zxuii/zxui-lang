@@ -16,6 +16,29 @@ closure("ini dipanggil dari: ")();
 
 Kode di atas adalah demonstrasi sederhana bahasa pemrograman Zxui yang dimana dapat menggunakan closure.
 
+## Building
+
+Kamu cukup bisa melakukan build dan run dengan menginstall cargo/rust compiler di website mereka lalu:
+
+```bash
+cargo b -r
+```
+
+atau langsung run:
+
+```bash
+cargo r -r <file.zxui>
+```
+
+kalau sudah build:
+
+```bash
+./target/release/zxui-lang <file.zxui>
+```
+
+## TODOs
+
+- [ ] Membuat portingan Raylib <-> Zxui agar bisa membuat game topdown sederhana di zxui dengan ini. 
 
 ## Special thanks to
 
@@ -29,6 +52,10 @@ Jujur aja untuk crafting interpreters ini bukunya bagus, tapi.... tapi nih ya...
 ## History
 
 Sebelumnya bahasa ini ditulis di satu file python yang berantakan, untuk sekarang memang udah lebih rapi dan menggunakan bahasa pemrograman rust yang lebih cepat secara performa karena memang compile-to-native ya kan ya, tapi tetep aja lambat kalau masih pake tree-based interpreter. aku inginnya sih langsung bisa stack-based vm interpreter. atau bahkan membuat compiler, tentunya aku malas berurusan dengan memory management jadi aku pake GC aja langsung kalau terpikirkan ide ini. ya semoga saja bahasa ini terus diupdate ygy. stay tune!
+
+---
+
+jujur aja, sepertinya tidak terlalu mudah untuk mengubah ini semua menjadi bytecode-based interpreter begitu saja... jadi aku mengubah tujuan agar bahasa pemrograman ini itu bisa membuat game di atas bahasa pemrograman ini sendiri saja.
 
 ## Dokumentasi
 
