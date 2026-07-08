@@ -1,20 +1,151 @@
 # Zxui programming language
 
-Zxui adalah bahasa pemrograman yang ditulis di rust dengan menggunakan arsitektur Tree-Walk interpreter yang meng-traverse setiap tree yang ada. walau lambat tapi karena cukup mudah di implemnetasikan kenapa tidak yakan? dan juga bahasa ini masih tahap pengembangan dan sangat jauh sekali dari kata selesai. kuharap aku terus melakukan update kepada bahasa pemrograman ini agar bisa menjadi bahasa pemrograman yang sangat bagus kedepannya. Aku berharap juga agar ini tidak lagi AST-based interpreter tetapi jadi Bytecode-based interpreter.
+Zxui adalah bahasa pemrograman yang ditulis di rust dengan menggunakan arsitektur Tree-Walk interpreter yang meng-traverse setiap tree yang ada. walau lambat tapi karena cukup mudah di implemnetasikan kenapa tidak yakan? dan juga bahasa ini masih tahap pengembangan dan sangat jauh sekali dari kata selesai. Aku sudah cukup puas sih sebenarnya dengan bahasa pemrograman ini, aku tak menyangka aku bisa sejauh ini dalam mengembangkan ini semua sendirian dalam waktu kurang lebih 10 hari (berdasarkan commit pertama). Tidak menyangka aja, dari yang awalnya ditulis di python karena iseng, bisa menjadi bahasa pemrograman yang bisa menjalankan sebuah program bermakna.
 
-`closure.zxui`:
+`topdown.zxui`:
 ```kt
-fun closure(name) {
-    fun something() {
-        println(name, "fungsi something()");
-    }
-    return something;
+let width = 800
+let height = 600
+let speed = 400
+
+initWindow(width, height, "Top Down Zxui")
+
+let player = {
+    x = width / 2,
+    y = height / 2,
+    w = 50,
+    h = 50,
 }
 
-closure("ini dipanggil dari: ")();
+while !windowShouldClose() {
+    let dt = getFrameTime()
+
+    beginDrawing()
+
+    clearBackground("white")
+
+    if isKeyDown("w") {
+        player.y -= speed * dt
+    }
+    if isKeyDown("a") {
+        player.x -= speed * dt
+    }
+    if isKeyDown("s") {
+        player.y += speed * dt
+    }
+    if isKeyDown("d") {
+        player.x += speed * dt
+    }
+
+    drawRectangle(player.x, player.y, player.w, player.h, "red")
+
+    endDrawing()
+}
+
+closeWindow()
 ```
 
-Kode di atas adalah demonstrasi sederhana bahasa pemrograman Zxui yang dimana dapat menggunakan closure.
+Kode di atas adalah demonstrasi sederhana penggunaan raylib bawaan di bahasa pemrograman Zxui.
+
+`todoapp.zxui`:
+```kt
+let todos = [];
+let running = true;
+
+fun tampilMenu() {
+    println("===================="   );
+    println("     TODO LIST      "   );
+    println("===================="   );
+    println("1. Lihat todos"         );
+    println("2. Tambah todo"         );
+    println("3. Hapus todo"          );
+    println("4. Tandai selesai/belum");
+    println("5. Keluar"              );
+    println("===================="   );
+}
+
+fun tampilTodos() {
+    if len(todos) == 0 {
+        println("Belum ada todo!");
+    } else {
+        for i in range(len(todos)) {
+            let todo = todos[i];
+            let teks = todo[0];
+            let selesai = todo[1];
+            let tanda = "[ ]";
+            if selesai {
+                tanda = "[x]";
+            }
+            println(string(i + 1) + ". " + tanda + " " + teks);
+        }
+    }
+}
+
+fun tambahTodo() {
+    let input = readline("Masukan todo: ");
+    push(todos, [input, false]);
+    println("Todo berhasil ditambahkan!");
+}
+
+fun hapusTodo() {
+    if len(todos) == 0 {
+        println("Belum ada todo yang bisa dihapus!");
+    } else {
+        tampilTodos();
+        let input = readline("Hapus nomor berapa? ");
+        let idx = number(input) - 1;
+        if idx < 0 or idx >= len(todos) {
+            println("Nomor tidak valid!");
+        } else {
+            remove(todos, idx);
+            println("Todo berhasil dihapus!");
+        }
+    }
+}
+
+fun toggleTodo() {
+    if len(todos) == 0 {
+        println("Belum ada todo!");
+    } else {
+        tampilTodos();
+        let input = readline("Tandai nomor berapa? ");
+        let idx = number(input) - 1;
+        if idx < 0 or idx >= len(todos) {
+            println("Nomor tidak valid!");
+        } else {
+            let todo = todos[idx];
+            if todo[1] {
+                todo[1] = false;
+            } else {
+                todo[1] = true;
+            }
+            println("Status todo berhasil diubah!");
+        }
+    }
+}
+
+while running {
+    tampilMenu();
+    let pilihan = readline("Pilih menu: ");
+
+    if pilihan == "1" {
+        tampilTodos();
+    } else if pilihan == "2" {
+        tambahTodo();
+    } else if pilihan == "3" {
+        hapusTodo();
+    } else if pilihan == "4" {
+        toggleTodo();
+    } else if pilihan == "5" {
+        println("Sampai jumpa!");
+        running = false;
+    } else {
+        println("Pilihan tidak valid!");
+    }
+}
+```
+
+Kode di atas adalah demonstrasi aplikasi CRUD di bahasa pemrograman Zxui.
 
 ## Building
 
