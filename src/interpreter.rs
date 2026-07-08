@@ -53,6 +53,15 @@ impl Interpreter {
     }
 
     fn define_natives(&mut self) {
+        // raylibs
+        let ray = Rc::new(Raylib::new("./raylib/lib/raylib.dll".to_string()).expect("failed to load raylib.dll"));
+
+        self.env.borrow_mut().define(
+            "initWindow".to_string(),
+            raylib_init_window(ray),
+        );
+
+        // langs
         self.env.borrow_mut().define(
             "println".to_string(),
             Value::native_fun("println".to_string(), -1, Rc::new(native_println)),

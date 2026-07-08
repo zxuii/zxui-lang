@@ -1,10 +1,77 @@
 use crate::object::Value;
 
+use libloading::{Library, Symbol};
 use std::{
-    cell::RefCell,
-    io::{self, Write},
-    rc::Rc,
+    cell::RefCell, ffi::CString, io::{self, Write}, rc::Rc,
 };
+
+// helper permudah hidup
+fn expect_number(v: &Value, fname: &str, i: usize) -> Result<f64, String> {
+    match v {
+        Value::Number(n) => Ok(*n),
+        other => Err(format!("{}(): argument {} must be a number, got '{}'.", fname, i + 1, other)),
+    }
+}
+
+fn expect_string(v: &Value, fname: &str, i: usize) -> Result<String, String> {
+    match v {
+        Value::String(s) => Ok(s.clone()),
+        other => Err(format!("{}(): argument {} must be a string, got '{}'.", fname, i + 1, other)),
+    }
+}
+
+// fn expect_boolean(v: &Value, fname: &str, i: usize) -> Result<bool, String> {
+//     match v {
+//         Value::Boolean(b) => Ok(*b),
+//         other => Err(format!("{}(): argument {} must be a boolean, got '{}'.", fname, i + 1, other)),
+//     }
+// }
+
+// -------------------------- UNTUK RAYLIB --------------------------
+
+// fungsi fungsi raylib
+type InitWindowFn = unsafe extern "C" fn (width: i32, height: i32, title: *const i8);
+
+// untuk mempermudah buat struct
+pub struct Raylib {
+    _lib: Library,
+    pub init_window: InitWindowFn,
+}
+
+impl Raylib {
+    pub fn new(lib_path: String) -> Result<Self, libloading::Error> {
+        unsafe {
+            let lib = Library::new(lib_path)?;
+            let init_window = {
+                let sym: Symbol<InitWindowFn> = lib.get(b"InitWindow\0")?;
+                *sym
+            };
+            Ok(Self { _lib: lib, init_window })
+        }
+    }
+}
+
+pub fn raylib_init_window(raylib: Rc<Raylib>) -> Value {
+    Value::native_fun(
+        "initWindow".to_string(),
+        3,
+        Rc::new(move |args: Vec<Value>| -> Result<Value, String> {
+            eprintln!("DEBUG: masuk initWindow closure");
+            let width = expect_number(&args[0], "initWindow", 0)? as i32;
+            let height = expect_number(&args[1], "initWindow", 1)? as i32;
+            let title = expect_string(&args[2], "initWindow", 2)?;
+            eprintln!("DEBUG: width={} height={} title={}", width, height, title);
+            let title_c = CString::new(title).unwrap();
+            eprintln!("DEBUG: sebelum panggil raylib.init_window");
+
+            unsafe { (raylib.init_window)(width, height, title_c.as_ptr()) };
+            eprintln!("DEBUG: sesudah panggil raylib.init_window"); // kalau ini gak kepanggil, crash-nya di dalam DLL
+            Ok(Value::Null)
+        }),
+    )
+}
+
+// -------------------- UNTUK NATIVE BIASA --------------------------
 
 pub fn native_println(args: Vec<Value>) -> Result<Value, String> {
     let _ = native_print(args);
