@@ -55,7 +55,7 @@ impl Interpreter {
     fn define_natives(&mut self) {
         // raylibs
         let ray = Rc::new(
-            Raylib::new("./raylib/lib/raylib.dll".to_string()).expect("failed to load raylib.dll"),
+            Raylib::new("./raylib/lib/raylib.dll".to_string()).expect("failed to load raylib.dll"), // jujur aja aku males banget kalau disuruh support multi platform, tetek bengek harus bundling dll ini ke executable, dsb. yang penting work di gw mah fine aja
         );
 
         self.env
