@@ -82,9 +82,7 @@ impl Value {
                 }
                 write!(f, "{}}}", spaces)
             }
-            Value::Function {
-                name,
-         ..} => write!(f, "[fun {name}]"),
+            Value::Function { name, .. } => write!(f, "[fun {name}]"),
             Value::NativeFunction { name, .. } => write!(f, "[native fun {name}]"),
         }
     }

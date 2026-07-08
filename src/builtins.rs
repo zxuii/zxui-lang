@@ -146,7 +146,10 @@ pub fn native_remove(args: Vec<Value>) -> Result<Value, String> {
                 Some(val) => Ok(val),
                 None => Ok(Value::Null),
             },
-            _ => Err("remove(): second argument must be a string key when removing from map.".to_string()),
+            _ => Err(
+                "remove(): second argument must be a string key when removing from map."
+                    .to_string(),
+            ),
         },
         _ => Err("remove(): first argument must be array or map.".to_string()),
     }
@@ -214,7 +217,11 @@ pub fn native_range(args: Vec<Value>) -> Result<Value, String> {
 pub fn native_keys(args: Vec<Value>) -> Result<Value, String> {
     match &args[0] {
         Value::Map(map) => {
-            let keys: Vec<Value> = map.borrow().keys().map(|k| Value::String(k.clone())).collect();
+            let keys: Vec<Value> = map
+                .borrow()
+                .keys()
+                .map(|k| Value::String(k.clone()))
+                .collect();
             Ok(Value::Array(Rc::new(RefCell::new(keys))))
         }
         _ => Err("keys(): argument must be a map.".to_string()),
@@ -233,9 +240,7 @@ pub fn native_values(args: Vec<Value>) -> Result<Value, String> {
 
 pub fn native_has_key(args: Vec<Value>) -> Result<Value, String> {
     match (&args[0], &args[1]) {
-        (Value::Map(map), Value::String(key)) => {
-            Ok(Value::Boolean(map.borrow().contains_key(key)))
-        }
+        (Value::Map(map), Value::String(key)) => Ok(Value::Boolean(map.borrow().contains_key(key))),
         (Value::Map(_), _) => Err("hasKey(): second argument must be a string key.".to_string()),
         _ => Err("hasKey(): first argument must be a map.".to_string()),
     }
