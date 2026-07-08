@@ -81,7 +81,12 @@ impl Interpreter {
 
         self.env.borrow_mut().define(
             "clearBackground".to_string(),
-            raylib_clear_background(ray),
+            raylib_clear_background(ray.clone()),
+        );
+
+        self.env.borrow_mut().define(
+            "drawRectangle".to_string(),
+            raylib_draw_rectangle(ray),
         );
 
         // langs

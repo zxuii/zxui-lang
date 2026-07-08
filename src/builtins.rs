@@ -48,6 +48,7 @@ type WindowShouldCloseFn = unsafe extern "C" fn() -> bool;
 type BeginDrawingFn = unsafe extern "C" fn();
 type EndDrawingFn = unsafe extern "C" fn();
 type CloseWindowFn = unsafe extern "C" fn();
+type DrawRectangleFn = unsafe extern "C" fn(pos_x: i32, pos_y: i32, width: i32, height: i32, color: u32);
 
 // sebenarnya di raylib color itu struct yang berisi 4 biji u8 `R`, `G`, `B`, `A` 
 // tapi karena itu bisa di taruh di i32 dan mengsimplifikasi segalanya kenapa engga
@@ -62,6 +63,7 @@ pub struct Raylib {
     pub end_drawing: EndDrawingFn,
     pub close_window: CloseWindowFn,
     pub clear_background: ClearBackgroundFn,
+    pub draw_rectangle: DrawRectangleFn,
 }
 
 impl Raylib {
@@ -92,6 +94,10 @@ impl Raylib {
                 let sym: Symbol<ClearBackgroundFn> = lib.get(b"ClearBackground\0")?;
                 *sym
             };
+            let draw_rectangle = {
+                let sym: Symbol<DrawRectangleFn> = lib.get(b"DrawRectangle\0")?;
+                *sym
+            };
 
             Ok(Self {
                 _lib: lib,
@@ -101,6 +107,7 @@ impl Raylib {
                 end_drawing,
                 close_window,
                 clear_background,
+                draw_rectangle,
             })
         }
     }
@@ -183,6 +190,24 @@ pub fn raylib_clear_background(raylib: Rc<Raylib>) -> Value {
             let c = resolve_color(color.as_str())?;
 
             unsafe { (raylib.clear_background)(c) };
+            Ok(Value::Null)
+        }),
+    )
+}
+
+pub fn raylib_draw_rectangle(raylib: Rc<Raylib>) -> Value {
+    Value::native_fun(
+        "drawRectangle".to_string(),
+        5,
+        Rc::new(move |args| -> Result<Value, String> {
+            let pos_x = expect_number(&args[0], "drawRectangle", 0)?;
+            let pos_y = expect_number(&args[1], "drawRectangle", 1)?;
+            let width = expect_number(&args[2], "drawRectangle", 2)?;
+            let height = expect_number(&args[3], "drawRectangle", 3)?;
+            let color = expect_string(&args[4], "drawRectangle", 4)?;
+            let c = resolve_color(color.as_str())?;
+
+            unsafe { (raylib.draw_rectangle)(pos_x as i32, pos_y as i32, width as i32, height as i32, c) };
             Ok(Value::Null)
         }),
     )
