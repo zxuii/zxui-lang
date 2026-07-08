@@ -1,9 +1,17 @@
-initWindow(800, 600, "Top Down Zxui")
+let width = 800
+let height = 600
+
+initWindow(width, height, "Top Down Zxui")
+
+let player = {
+    x = width / 2,
+    y = height / 2
+}
 
 while !windowShouldClose() {
     beginDrawing()
 
-    // clearBackground("white")
+    clearBackground("white")
 
     endDrawing()
 }
