@@ -198,9 +198,35 @@ pub fn raylib_get_frame_time(raylib: Rc<Raylib>) -> Value {
 }
 
 fn resolve_color(color: &str) -> Result<u32, String> {
+    // diambil dari AI juga biar cepet dan asli akurat
     match color {
-        "white" => Ok(0xFFFFFFFF),
+        "light_gray" => Ok(0xC8C8C8FF),
+        "gray" => Ok(0x828282FF),
+        "dark_gray" => Ok(0x505050FF),
+        "yellow" => Ok(0xFDF900FF),
+        "gold" => Ok(0xFFCB00FF),
+        "orange" => Ok(0xFFA100FF),
+        "pink" => Ok(0xFF6DC2FF),
         "red" => Ok(0xE62937FF),
+        "maroon" => Ok(0xBE2137FF),
+        "green" => Ok(0x00E430FF),
+        "lime" => Ok(0x00AA2CFF),
+        "dark_green" => Ok(0x00752CFF),
+        "sky_blue" => Ok(0x66BFFFFF),
+        "blue" => Ok(0x0079F1FF),
+        "dark_blue" => Ok(0x0052ACFF),
+        "purple" => Ok(0xC87AFFFF),
+        "violet" => Ok(0x873CBEFF),
+        "dark_purple" => Ok(0x701F7EFF),
+        "beige" => Ok(0xD3B083FF),
+        "brown" => Ok(0x7F6A4DFF),
+        "dark_brown" => Ok(0x4C3F2FFF),
+        "white" => Ok(0xFFFFFFFF),
+        "black" => Ok(0x000000FF),
+        "blank" => Ok(0x00000000),
+        "magenta" => Ok(0xFF00FFFF),
+        "ray_white" => Ok(0xF5F5F5FF),
+
         _ => Err(format!(
             "clearBackground(): unknown color named '{}'",
             color
