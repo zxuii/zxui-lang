@@ -49,6 +49,10 @@ type BeginDrawingFn = unsafe extern "C" fn();
 type EndDrawingFn = unsafe extern "C" fn();
 type CloseWindowFn = unsafe extern "C" fn();
 
+// sebenarnya di raylib color itu struct yang berisi 4 biji u8 `R`, `G`, `B`, `A` 
+// tapi karena itu bisa di taruh di i32 dan mengsimplifikasi segalanya kenapa engga
+type ClearBackgroundFn = unsafe extern "C" fn(color: u32); 
+
 // untuk mempermudah buat struct
 pub struct Raylib {
     _lib: Library,
@@ -57,6 +61,7 @@ pub struct Raylib {
     pub begin_drawing: BeginDrawingFn,
     pub end_drawing: EndDrawingFn,
     pub close_window: CloseWindowFn,
+    pub clear_background: ClearBackgroundFn,
 }
 
 impl Raylib {
@@ -83,6 +88,11 @@ impl Raylib {
                 let sym: Symbol<CloseWindowFn> = lib.get(b"CloseWindow\0")?;
                 *sym
             };
+            let clear_background = {
+                let sym: Symbol<ClearBackgroundFn> = lib.get(b"ClearBackground\0")?;
+                *sym
+            };
+
             Ok(Self {
                 _lib: lib,
                 init_window,
@@ -90,6 +100,7 @@ impl Raylib {
                 begin_drawing,
                 end_drawing,
                 close_window,
+                clear_background,
             })
         }
     }
@@ -150,6 +161,28 @@ pub fn raylib_close_window(raylib: Rc<Raylib>) -> Value {
         0,
         Rc::new(move |_| -> Result<Value, String> {
             unsafe { (raylib.close_window)() };
+            Ok(Value::Null)
+        }),
+    )
+}
+
+fn resolve_color(color: &str) -> Result<u32, String> {
+    match color {
+        "white" => Ok(0xFFFFFFFF),
+        "red"   => Ok(0xE62937FF),
+        _ => Err(format!("clearBackground(): unknown color named '{}'", color)),
+    }
+}
+
+pub fn raylib_clear_background(raylib: Rc<Raylib>) -> Value {
+    Value::native_fun(
+        "clearBackground".to_string(),
+        1,
+        Rc::new(move |args| -> Result<Value, String> {
+            let color = expect_string(&args[0], "clearBackground", 0)?;
+            let c = resolve_color(color.as_str())?;
+
+            unsafe { (raylib.clear_background)(c) };
             Ok(Value::Null)
         }),
     )

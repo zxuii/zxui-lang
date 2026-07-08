@@ -76,9 +76,13 @@ impl Interpreter {
         );
         self.env.borrow_mut().define(
             "closeWindow".to_string(),
-            raylib_close_window(ray),
+            raylib_close_window(ray.clone()),
         );
 
+        self.env.borrow_mut().define(
+            "clearBackground".to_string(),
+            raylib_clear_background(ray),
+        );
 
         // langs
         self.env.borrow_mut().define(
