@@ -58,7 +58,12 @@ impl Interpreter {
 
         self.env.borrow_mut().define(
             "initWindow".to_string(),
-            raylib_init_window(ray),
+            raylib_init_window(ray.clone()),
+        );
+
+        self.env.borrow_mut().define(
+            "windowShouldClose".to_string(),
+            raylib_windows_should_close(ray),
         );
 
         // langs

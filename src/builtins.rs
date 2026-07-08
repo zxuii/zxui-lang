@@ -2,21 +2,34 @@ use crate::object::Value;
 
 use libloading::{Library, Symbol};
 use std::{
-    cell::RefCell, ffi::CString, io::{self, Write}, rc::Rc,
+    cell::RefCell,
+    ffi::CString,
+    io::{self, Write},
+    rc::Rc,
 };
 
 // helper permudah hidup
 fn expect_number(v: &Value, fname: &str, i: usize) -> Result<f64, String> {
     match v {
         Value::Number(n) => Ok(*n),
-        other => Err(format!("{}(): argument {} must be a number, got '{}'.", fname, i + 1, other)),
+        other => Err(format!(
+            "{}(): argument {} must be a number, got '{}'.",
+            fname,
+            i + 1,
+            other
+        )),
     }
 }
 
 fn expect_string(v: &Value, fname: &str, i: usize) -> Result<String, String> {
     match v {
         Value::String(s) => Ok(s.clone()),
-        other => Err(format!("{}(): argument {} must be a string, got '{}'.", fname, i + 1, other)),
+        other => Err(format!(
+            "{}(): argument {} must be a string, got '{}'.",
+            fname,
+            i + 1,
+            other
+        )),
     }
 }
 
@@ -30,12 +43,14 @@ fn expect_string(v: &Value, fname: &str, i: usize) -> Result<String, String> {
 // -------------------------- UNTUK RAYLIB --------------------------
 
 // fungsi fungsi raylib
-type InitWindowFn = unsafe extern "C" fn (width: i32, height: i32, title: *const i8);
+type InitWindowFn = unsafe extern "C" fn(width: i32, height: i32, title: *const i8);
+type WindowShouldCloseFn = unsafe extern "C" fn() -> bool;
 
 // untuk mempermudah buat struct
 pub struct Raylib {
     _lib: Library,
     pub init_window: InitWindowFn,
+    pub window_should_close: WindowShouldCloseFn,
 }
 
 impl Raylib {
@@ -46,7 +61,15 @@ impl Raylib {
                 let sym: Symbol<InitWindowFn> = lib.get(b"InitWindow\0")?;
                 *sym
             };
-            Ok(Self { _lib: lib, init_window })
+            let window_should_close = {
+                let sym: Symbol<WindowShouldCloseFn> = lib.get(b"WindowShouldClose\0")?;
+                *sym
+            };
+            Ok(Self {
+                _lib: lib,
+                init_window,
+                window_should_close,
+            })
         }
     }
 }
@@ -55,7 +78,7 @@ pub fn raylib_init_window(raylib: Rc<Raylib>) -> Value {
     Value::native_fun(
         "initWindow".to_string(),
         3,
-        Rc::new(move |args: Vec<Value>| -> Result<Value, String> {
+        Rc::new(move |args| -> Result<Value, String> {
             let width = expect_number(&args[0], "initWindow", 0)? as i32;
             let height = expect_number(&args[1], "initWindow", 1)? as i32;
             let title = expect_string(&args[2], "initWindow", 2)?;
@@ -63,6 +86,17 @@ pub fn raylib_init_window(raylib: Rc<Raylib>) -> Value {
 
             unsafe { (raylib.init_window)(width, height, title_c.as_ptr()) };
             Ok(Value::Null)
+        }),
+    )
+}
+
+pub fn raylib_windows_should_close(raylib: Rc<Raylib>) -> Value {
+    Value::native_fun(
+        "windowShouldClose".to_string(),
+        0,
+        Rc::new(move |_| -> Result<Value, String> {
+            let val = unsafe { (raylib.window_should_close)() };
+            Ok(Value::Boolean(val))
         }),
     )
 }
