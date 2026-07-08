@@ -70,14 +70,12 @@ impl Interpreter {
             "beginDrawing".to_string(),
             raylib_begin_drawing(ray.clone()),
         );
-        self.env.borrow_mut().define(
-            "endDrawing".to_string(),
-            raylib_end_drawing(ray.clone()),
-        );
-        self.env.borrow_mut().define(
-            "closeWindow".to_string(),
-            raylib_close_window(ray.clone()),
-        );
+        self.env
+            .borrow_mut()
+            .define("endDrawing".to_string(), raylib_end_drawing(ray.clone()));
+        self.env
+            .borrow_mut()
+            .define("closeWindow".to_string(), raylib_close_window(ray.clone()));
 
         self.env.borrow_mut().define(
             "clearBackground".to_string(),
@@ -89,10 +87,9 @@ impl Interpreter {
             raylib_draw_rectangle(ray.clone()),
         );
 
-        self.env.borrow_mut().define(
-            "isKeyDown".to_string(),
-            raylib_is_key_down(ray),
-        );
+        self.env
+            .borrow_mut()
+            .define("isKeyDown".to_string(), raylib_is_key_down(ray));
 
         // langs
         self.env.borrow_mut().define(
@@ -501,6 +498,23 @@ impl Interpreter {
                         let current = arr.borrow()[i].clone();
                         let new_val = Self::apply_comp_op(current, op, rhs)?;
                         arr.borrow_mut()[i] = new_val;
+                    }
+                    Expr::Get {
+                        target: obj_target,
+                        name,
+                    } => {
+                        let (map, key) = self.resolve_map_property(obj_target, name)?;
+                        let current = match map.borrow().get(&key) {
+                            Some(val) => val.clone(),
+                            None => {
+                                return Err(format!(
+                                    "property '{}' does not exist on this object.",
+                                    key
+                                ));
+                            }
+                        };
+                        let new_val = Self::apply_comp_op(current, op, rhs)?;
+                        map.borrow_mut().insert(key, new_val);
                     }
                     _ => return Err("invalid assignment target".into()),
                 }
