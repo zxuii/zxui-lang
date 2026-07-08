@@ -72,8 +72,13 @@ impl Interpreter {
         );
         self.env.borrow_mut().define(
             "endDrawing".to_string(),
-            raylib_end_drawing(ray),
+            raylib_end_drawing(ray.clone()),
         );
+        self.env.borrow_mut().define(
+            "closeWindow".to_string(),
+            raylib_close_window(ray),
+        );
+
 
         // langs
         self.env.borrow_mut().define(
