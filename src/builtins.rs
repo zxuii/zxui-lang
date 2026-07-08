@@ -45,12 +45,16 @@ fn expect_string(v: &Value, fname: &str, i: usize) -> Result<String, String> {
 // fungsi fungsi raylib
 type InitWindowFn = unsafe extern "C" fn(width: i32, height: i32, title: *const i8);
 type WindowShouldCloseFn = unsafe extern "C" fn() -> bool;
+type BeginDrawingFn = unsafe extern "C" fn();
+type EndDrawingFn = unsafe extern "C" fn();
 
 // untuk mempermudah buat struct
 pub struct Raylib {
     _lib: Library,
     pub init_window: InitWindowFn,
     pub window_should_close: WindowShouldCloseFn,
+    pub begin_drawing: BeginDrawingFn,
+    pub end_drawing: EndDrawingFn,
 }
 
 impl Raylib {
@@ -65,10 +69,20 @@ impl Raylib {
                 let sym: Symbol<WindowShouldCloseFn> = lib.get(b"WindowShouldClose\0")?;
                 *sym
             };
+            let begin_drawing = {
+                let sym: Symbol<BeginDrawingFn> = lib.get(b"BeginDrawing\0")?;
+                *sym
+            };
+            let end_drawing = {
+                let sym: Symbol<EndDrawingFn> = lib.get(b"EndDrawing\0")?;
+                *sym
+            };
             Ok(Self {
                 _lib: lib,
                 init_window,
                 window_should_close,
+                begin_drawing,
+                end_drawing,
             })
         }
     }
@@ -100,6 +114,29 @@ pub fn raylib_windows_should_close(raylib: Rc<Raylib>) -> Value {
         }),
     )
 }
+
+pub fn raylib_begin_drawing(raylib: Rc<Raylib>) -> Value {
+    Value::native_fun(
+        "beginDrawing".to_string(),
+        0,
+        Rc::new(move |_| -> Result<Value, String> {
+            unsafe { (raylib.begin_drawing)() };
+            Ok(Value::Null)
+        }),
+    )
+}
+
+pub fn raylib_end_drawing(raylib: Rc<Raylib>) -> Value {
+    Value::native_fun(
+        "endDrawing".to_string(),
+        0,
+        Rc::new(move |_| -> Result<Value, String> {
+            unsafe { (raylib.end_drawing)() };
+            Ok(Value::Null)
+        }),
+    )
+}
+
 
 // -------------------- UNTUK NATIVE BIASA --------------------------
 
