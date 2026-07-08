@@ -48,11 +48,12 @@ type WindowShouldCloseFn = unsafe extern "C" fn() -> bool;
 type BeginDrawingFn = unsafe extern "C" fn();
 type EndDrawingFn = unsafe extern "C" fn();
 type CloseWindowFn = unsafe extern "C" fn();
-type DrawRectangleFn = unsafe extern "C" fn(pos_x: i32, pos_y: i32, width: i32, height: i32, color: u32);
-
-// sebenarnya di raylib color itu struct yang berisi 4 biji u8 `R`, `G`, `B`, `A` 
+// sebenarnya di raylib color itu struct yang berisi 4 biji u8 `R`, `G`, `B`, `A`
 // tapi karena itu bisa di taruh di i32 dan mengsimplifikasi segalanya kenapa engga
-type ClearBackgroundFn = unsafe extern "C" fn(color: u32); 
+type ClearBackgroundFn = unsafe extern "C" fn(color: u32);
+type DrawRectangleFn =
+    unsafe extern "C" fn(pos_x: i32, pos_y: i32, width: i32, height: i32, color: u32);
+type IsKeyDownFn = unsafe extern "C" fn(key: i32) -> bool;
 
 // untuk mempermudah buat struct
 pub struct Raylib {
@@ -64,6 +65,7 @@ pub struct Raylib {
     pub close_window: CloseWindowFn,
     pub clear_background: ClearBackgroundFn,
     pub draw_rectangle: DrawRectangleFn,
+    pub is_key_down: IsKeyDownFn,
 }
 
 impl Raylib {
@@ -98,7 +100,10 @@ impl Raylib {
                 let sym: Symbol<DrawRectangleFn> = lib.get(b"DrawRectangle\0")?;
                 *sym
             };
-
+            let is_key_down = {
+                let sym: Symbol<IsKeyDownFn> = lib.get(b"IsKeyDown\0")?;
+                *sym
+            };
             Ok(Self {
                 _lib: lib,
                 init_window,
@@ -108,6 +113,7 @@ impl Raylib {
                 close_window,
                 clear_background,
                 draw_rectangle,
+                is_key_down,
             })
         }
     }
@@ -176,8 +182,137 @@ pub fn raylib_close_window(raylib: Rc<Raylib>) -> Value {
 fn resolve_color(color: &str) -> Result<u32, String> {
     match color {
         "white" => Ok(0xFFFFFFFF),
-        "red"   => Ok(0xE62937FF),
-        _ => Err(format!("clearBackground(): unknown color named '{}'", color)),
+        "red" => Ok(0xE62937FF),
+        _ => Err(format!(
+            "clearBackground(): unknown color named '{}'",
+            color
+        )),
+    }
+}
+
+fn resolve_key(key: &str) -> Result<i32, String> {
+    // hasil generate AI biar mempercepat awoawokawok
+    match key {
+        "null" => Ok(0),
+
+        // Alphanumeric
+        "apostrophe" => Ok(39),
+        "comma" => Ok(44),
+        "minus" => Ok(45),
+        "period" => Ok(46),
+        "slash" => Ok(47),
+        "0" => Ok(48),
+        "1" => Ok(49),
+        "2" => Ok(50),
+        "3" => Ok(51),
+        "4" => Ok(52),
+        "5" => Ok(53),
+        "6" => Ok(54),
+        "7" => Ok(55),
+        "8" => Ok(56),
+        "9" => Ok(57),
+        "semicolon" => Ok(59),
+        "equal" => Ok(61),
+        "a" => Ok(65),
+        "b" => Ok(66),
+        "c" => Ok(67),
+        "d" => Ok(68),
+        "e" => Ok(69),
+        "f" => Ok(70),
+        "g" => Ok(71),
+        "h" => Ok(72),
+        "i" => Ok(73),
+        "j" => Ok(74),
+        "k" => Ok(75),
+        "l" => Ok(76),
+        "m" => Ok(77),
+        "n" => Ok(78),
+        "o" => Ok(79),
+        "p" => Ok(80),
+        "q" => Ok(81),
+        "r" => Ok(82),
+        "s" => Ok(83),
+        "t" => Ok(84),
+        "u" => Ok(85),
+        "v" => Ok(86),
+        "w" => Ok(87),
+        "x" => Ok(88),
+        "y" => Ok(89),
+        "z" => Ok(90),
+        "left_bracket" => Ok(91),
+        "backslash" => Ok(92),
+        "right_bracket" => Ok(93),
+        "grave" => Ok(96),
+
+        // Function keys
+        "space" => Ok(32),
+        "escape" => Ok(256),
+        "enter" => Ok(257),
+        "tab" => Ok(258),
+        "backspace" => Ok(259),
+        "insert" => Ok(260),
+        "delete" => Ok(261),
+        "right" => Ok(262),
+        "left" => Ok(263),
+        "down" => Ok(264),
+        "up" => Ok(265),
+        "page_up" => Ok(266),
+        "page_down" => Ok(267),
+        "home" => Ok(268),
+        "end" => Ok(269),
+        "caps_lock" => Ok(280),
+        "scroll_lock" => Ok(281),
+        "num_lock" => Ok(282),
+        "print_screen" => Ok(283),
+        "pause" => Ok(284),
+        "f1" => Ok(290),
+        "f2" => Ok(291),
+        "f3" => Ok(292),
+        "f4" => Ok(293),
+        "f5" => Ok(294),
+        "f6" => Ok(295),
+        "f7" => Ok(296),
+        "f8" => Ok(297),
+        "f9" => Ok(298),
+        "f10" => Ok(299),
+        "f11" => Ok(300),
+        "f12" => Ok(301),
+        "left_shift" => Ok(340),
+        "left_control" => Ok(341),
+        "left_alt" => Ok(342),
+        "left_super" => Ok(343),
+        "right_shift" => Ok(344),
+        "right_control" => Ok(345),
+        "right_alt" => Ok(346),
+        "right_super" => Ok(347),
+        "kb_menu" => Ok(348),
+
+        // Keypad
+        "kp_0" => Ok(320),
+        "kp_1" => Ok(321),
+        "kp_2" => Ok(322),
+        "kp_3" => Ok(323),
+        "kp_4" => Ok(324),
+        "kp_5" => Ok(325),
+        "kp_6" => Ok(326),
+        "kp_7" => Ok(327),
+        "kp_8" => Ok(328),
+        "kp_9" => Ok(329),
+        "kp_decimal" => Ok(330),
+        "kp_divide" => Ok(331),
+        "kp_multiply" => Ok(332),
+        "kp_subtract" => Ok(333),
+        "kp_add" => Ok(334),
+        "kp_enter" => Ok(335),
+        "kp_equal" => Ok(336),
+
+        // Android
+        "back" => Ok(4),
+        "menu" => Ok(5),
+        "volume_up" => Ok(24),
+        "volume_down" => Ok(25),
+
+        _ => Err(format!("isKeyDown(): unknown key named '{}'", key)),
     }
 }
 
@@ -207,8 +342,24 @@ pub fn raylib_draw_rectangle(raylib: Rc<Raylib>) -> Value {
             let color = expect_string(&args[4], "drawRectangle", 4)?;
             let c = resolve_color(color.as_str())?;
 
-            unsafe { (raylib.draw_rectangle)(pos_x as i32, pos_y as i32, width as i32, height as i32, c) };
+            unsafe {
+                (raylib.draw_rectangle)(pos_x as i32, pos_y as i32, width as i32, height as i32, c)
+            };
             Ok(Value::Null)
+        }),
+    )
+}
+
+pub fn raylib_is_key_down(raylib: Rc<Raylib>) -> Value {
+    Value::native_fun(
+        "isKeyDown".to_string(),
+        1,
+        Rc::new(move |args| -> Result<Value, String> {
+            let key = expect_string(&args[0], "iskeyDown", 0)?;
+            let k = resolve_key(key.as_str())?;
+
+            let val = unsafe { (raylib.is_key_down)(k) };
+            Ok(Value::Boolean(val))
         }),
     )
 }

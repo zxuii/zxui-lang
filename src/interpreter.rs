@@ -86,7 +86,12 @@ impl Interpreter {
 
         self.env.borrow_mut().define(
             "drawRectangle".to_string(),
-            raylib_draw_rectangle(ray),
+            raylib_draw_rectangle(ray.clone()),
+        );
+
+        self.env.borrow_mut().define(
+            "isKeyDown".to_string(),
+            raylib_is_key_down(ray),
         );
 
         // langs
