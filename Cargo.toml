@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 indexmap = "2.14.0"
+libloading = "0.9.0"
