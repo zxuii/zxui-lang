@@ -5,13 +5,17 @@ initWindow(width, height, "Top Down Zxui")
 
 let player = {
     x = width / 2,
-    y = height / 2
+    y = height / 2,
+    w = 50,
+    h = 50,
 }
 
 while !windowShouldClose() {
     beginDrawing()
 
     clearBackground("white")
+
+    drawRectangle(player.x, player.y, player.w, player.h, "red")
 
     endDrawing()
 }
