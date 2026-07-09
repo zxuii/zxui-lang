@@ -3,6 +3,10 @@ name = "zxui-lang"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "zxui"
+path = "src/main.rs"
+
 [dependencies]
 indexmap = "2.14.0"
 libloading = "0.9.0"

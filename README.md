@@ -165,7 +165,7 @@ cargo r -r <file.zxui>
 kalau sudah build:
 
 ```bash
-./target/release/zxui-lang <file.zxui>
+./target/release/zxui <file.zxui>
 ```
 
 ## TODOs
