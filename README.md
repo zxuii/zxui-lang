@@ -3,7 +3,7 @@
 Zxui adalah bahasa pemrograman yang ditulis di rust dengan menggunakan arsitektur Tree-Walk interpreter yang meng-traverse setiap tree yang ada. walau lambat tapi karena cukup mudah di implemnetasikan kenapa tidak yakan? dan juga bahasa ini masih tahap pengembangan dan sangat jauh sekali dari kata selesai. Aku sudah cukup puas sih sebenarnya dengan bahasa pemrograman ini, aku tak menyangka aku bisa sejauh ini dalam mengembangkan ini semua sendirian dalam waktu kurang lebih 10 hari (berdasarkan commit pertama). Tidak menyangka aja, dari yang awalnya ditulis di python karena iseng, bisa menjadi bahasa pemrograman yang bisa menjalankan sebuah program bermakna.
 
 `topdown.zxui`:
-```kt
+```swift
 let width = 800
 let height = 600
 let speed = 400
@@ -48,13 +48,13 @@ closeWindow()
 Kode di atas adalah demonstrasi sederhana penggunaan raylib bawaan di bahasa pemrograman Zxui.
 
 `todoapp.zxui`:
-```kt
+```swift
 let todos = [];
 let running = true;
 
 fun tampilMenu() {
     println("===================="   );
-    println("     TODO LIST      "   );
+    println("      TODO APP      "   );
     println("===================="   );
     println("1. Lihat todos"         );
     println("2. Tambah todo"         );
@@ -68,23 +68,24 @@ fun tampilTodos() {
     if len(todos) == 0 {
         println("Belum ada todo!");
     } else {
-        for i in range(len(todos)) {
-            let todo = todos[i];
-            let teks = todo[0];
-            let selesai = todo[1];
-            let tanda = "[ ]";
-            if selesai {
-                tanda = "[x]";
+        for todo in todos {
+            let tanda = "[ ]"
+            if todo.selesai {
+                tanda = "[x]"
             }
-            println(string(i + 1) + ". " + tanda + " " + teks);
+            println(todo.nama + " ", tanda)
         }
     }
 }
 
 fun tambahTodo() {
     let input = readline("Masukan todo: ");
-    push(todos, [input, false]);
+    push(todos, { nama = input, selesai = false})
     println("Todo berhasil ditambahkan!");
+}
+
+fun cekNomor(idx) {
+    return idx < 0 or idx >= len(todos)
 }
 
 fun hapusTodo() {
@@ -94,7 +95,7 @@ fun hapusTodo() {
         tampilTodos();
         let input = readline("Hapus nomor berapa? ");
         let idx = number(input) - 1;
-        if idx < 0 or idx >= len(todos) {
+        if cekNomor(idx) {
             println("Nomor tidak valid!");
         } else {
             remove(todos, idx);
@@ -110,14 +111,14 @@ fun toggleTodo() {
         tampilTodos();
         let input = readline("Tandai nomor berapa? ");
         let idx = number(input) - 1;
-        if idx < 0 or idx >= len(todos) {
+        if cekNomor(idx) {
             println("Nomor tidak valid!");
         } else {
             let todo = todos[idx];
-            if todo[1] {
-                todo[1] = false;
+            if todo.selesai {
+                todo.selesai = false;
             } else {
-                todo[1] = true;
+                todo.selesai = true;
             }
             println("Status todo berhasil diubah!");
         }
