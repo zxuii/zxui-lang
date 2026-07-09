@@ -26,28 +26,17 @@ fn run() {
     if let Some(path) = args.get(1) {
         let file = read_to_string(path);
         match file {
-            Ok(f) => {
-                let mut lex = Lexer::new(path.clone(), f.clone());
-                lex.tokenize();
-                // for t in &lex.tokens {
-                //     println!("{}", t);
-                // }
+            Ok(f) => match Lexer::new(path.clone(), f.clone()).tokenize() {
+                Ok(tokens) => match Parser::new(path.clone(), f, tokens).parse() {
+                    Ok(stmt) => match Interpreter::new().exec_stmt(&stmt) {
+                        Ok(_) => {}
 
-                match Parser::new(path.clone(), f, lex.tokens).parse() {
-                    Ok(stmt) => {
-                        // println!("{:#?}", stmt);
-                        match Interpreter::new().exec_stmt(&stmt) {
-                            Ok(_) => {
-                                // println!("{:?}", result.unwrap_or(object::Value::Null) );
-                            }
-
-                            Err(e) => eprintln!("Runtime Error: {e}"),
-                        }
-                    }
+                        Err(e) => eprintln!("Runtime Error: {e}"),
+                    },
                     Err(e) => eprintln!("Parse Error: {e}"),
-                }
-                // println!("{:#?}", parse.parse().expect("Parse Error"));
-            }
+                },
+                Err(e) => eprintln!("Lexing Error: {e}"),
+            },
 
             Err(e) => {
                 eprintln!("Error when opening file '{}': {}", path, e);

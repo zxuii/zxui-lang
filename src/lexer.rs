@@ -26,37 +26,41 @@ impl Lexer {
         }
     }
 
-    fn error(&self, e: String) {
-        eprintln!(
-            "Lexer Error: {} at {}:{}:{}",
-            e, self.filename, self.line, self.col
+    fn error<T>(&self, e: String) -> Result<T, String> {
+        let mut msg = format!(
+            "{} at {}:{}:{}\n    {}",
+            e,
+            self.filename,
+            self.line,
+            self.col,
+            self.code_raw.lines().nth(self.line - 1).unwrap()
         );
-        eprintln!("    {}", self.code_raw.lines().nth(self.line - 1).unwrap());
         let mut cursor = String::from("    ");
         for _ in 0..self.col - 1 {
             cursor.push(' ');
         }
         cursor.push('^');
-        eprintln!("{}", cursor);
-        std::process::exit(1);
+        msg.push_str(&cursor);
+        Err(msg)
     }
 
-    pub fn tokenize(&mut self) {
+    pub fn tokenize(&mut self) -> Result<Vec<Token>, String> {
         self.advance();
         self.add_token(TokenType::Program, self.line, self.col);
         while self.ch != None {
-            self.next_token();
+            self.next_token()?;
         }
 
         self.add_token(TokenType::Eof, self.line, self.col);
+        Ok(self.tokens.clone())
     }
 
-    fn next_token(&mut self) {
+    fn next_token(&mut self) -> Result<(), String> {
         self.skip_whitespace();
 
         let ch = match self.ch {
             Some(c) => c,
-            None => return,
+            None => return Ok(()),
         };
 
         match ch {
@@ -99,8 +103,8 @@ impl Lexer {
                     self.advance(); // advance '*'
                     let mut depth: usize = 1;
                     loop {
-                        if self.ch == None {
-                            self.error("unterminated block comment".to_string());
+                        if self.ch.is_none() {
+                            return self.error("unterminated block comment".to_string());
                         }
                         if self.ch == Some('/') && self.peek() == Some('*') {
                             self.advance();
@@ -170,7 +174,7 @@ impl Lexer {
                     self.add_token_advance(TokenType::Bang);
                 }
             }
-            '"' => self.parse_string(),
+            '"' => self.parse_string()?,
             _ => {
                 if self.is_alpha() {
                     self.parse_ident_or_key();
@@ -183,10 +187,12 @@ impl Lexer {
                     } else {
                         c.push(self.ch.unwrap())
                     }
-                    self.error(format!("unexpected character '{}'", c))
+                    return self.error(format!("unexpected character '{}'", c));
                 }
             }
         }
+
+        Ok(())
     }
 
     fn advance(&mut self) {
@@ -280,7 +286,7 @@ impl Lexer {
         ident
     }
 
-    fn parse_string(&mut self) {
+    fn parse_string(&mut self) -> Result<(), String> {
         let start_line = self.line;
         let start_col = self.col;
 
@@ -298,10 +304,10 @@ impl Lexer {
                     Some('"') => str.push('"'),
                     Some('0') => str.push('\0'),
                     Some(c) => {
-                        self.error(format!("unknown escape sequence '\\{}'", c));
+                        return self.error(format!("unknown escape sequence '\\{}'", c));
                     }
                     None => {
-                        self.error("unterminated string".to_string());
+                        return self.error("unterminated string".to_string());
                     }
                 }
                 self.advance();
@@ -311,13 +317,15 @@ impl Lexer {
             }
         }
 
-        if self.ch == None {
-            self.error("unterminated string".to_string());
+        if self.ch.is_none() {
+            return self.error("unterminated string".to_string());
         }
 
         self.advance();
 
         self.add_token(TokenType::String(str), start_line, start_col);
+
+        Ok(())
     }
 
     fn parse_ident_or_key(&mut self) {
