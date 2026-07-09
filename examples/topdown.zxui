@@ -1,6 +1,7 @@
 let width = 800
 let height = 600
 let speed = 400
+let sprintSpeed = 550
 
 initWindow(width, height, "Top Down Zxui")
 
@@ -13,24 +14,39 @@ let player = {
 
 while !windowShouldClose() {
     let dt = getFrameTime()
-
+    let sprint = isKeyDown("left_shift")
     beginDrawing()
 
     clearBackground("white")
 
     if isKeyDown("w") {
-        player.y -= speed * dt
+        if sprint {
+            player.y -= sprintSpeed * dt
+        } else {
+            player.y -= speed * dt
+        }
     }
     if isKeyDown("a") {
-        player.x -= speed * dt
+        if sprint {
+            player.x -= sprintSpeed * dt
+        } else {
+            player.x -= speed * dt
+        }    
     }
     if isKeyDown("s") {
-        player.y += speed * dt
+        if sprint {
+            player.y += sprintSpeed * dt
+        } else {
+            player.y += speed * dt
+        }   
     }
     if isKeyDown("d") {
-        player.x += speed * dt
+        if sprint {
+            player.x += sprintSpeed * dt
+        } else {
+            player.x += speed * dt
+        }    
     }
-
     drawRectangle(player.x, player.y, player.w, player.h, "red")
 
     endDrawing()
