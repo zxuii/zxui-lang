@@ -1,9 +1,10 @@
 let todos = [];
+
 let running = true;
 
 fun tampilMenu() {
     println("===================="   );
-    println("     TODO LIST      "   );
+    println("      TODO APP      "   );
     println("===================="   );
     println("1. Lihat todos"         );
     println("2. Tambah todo"         );
@@ -17,23 +18,24 @@ fun tampilTodos() {
     if len(todos) == 0 {
         println("Belum ada todo!");
     } else {
-        for i in range(len(todos)) {
-            let todo = todos[i];
-            let teks = todo[0];
-            let selesai = todo[1];
-            let tanda = "[ ]";
-            if selesai {
-                tanda = "[x]";
+        for todo in todos {
+            let tanda = "[ ]"
+            if todo.selesai {
+                tanda = "[x]"
             }
-            println(string(i + 1) + ". " + tanda + " " + teks);
+            println(todo.nama + " ", tanda)
         }
     }
 }
 
 fun tambahTodo() {
     let input = readline("Masukan todo: ");
-    push(todos, [input, false]);
+    push(todos, { nama = input, selesai = false})
     println("Todo berhasil ditambahkan!");
+}
+
+fun cekNomor(idx) {
+    return idx < 0 or idx >= len(todos)
 }
 
 fun hapusTodo() {
@@ -43,7 +45,7 @@ fun hapusTodo() {
         tampilTodos();
         let input = readline("Hapus nomor berapa? ");
         let idx = number(input) - 1;
-        if idx < 0 or idx >= len(todos) {
+        if cekNomor(idx) {
             println("Nomor tidak valid!");
         } else {
             remove(todos, idx);
@@ -59,14 +61,14 @@ fun toggleTodo() {
         tampilTodos();
         let input = readline("Tandai nomor berapa? ");
         let idx = number(input) - 1;
-        if idx < 0 or idx >= len(todos) {
+        if cekNomor(idx) {
             println("Nomor tidak valid!");
         } else {
             let todo = todos[idx];
-            if todo[1] {
-                todo[1] = false;
+            if todo.selesai {
+                todo.selesai = false;
             } else {
-                todo[1] = true;
+                todo.selesai = true;
             }
             println("Status todo berhasil diubah!");
         }
