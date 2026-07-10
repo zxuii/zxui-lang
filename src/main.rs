@@ -10,7 +10,14 @@ mod tokens;
 use interpreter::Interpreter;
 use lexer::Lexer;
 use parser::Parser;
-use std::{cell::RefCell, env, fs::read_to_string, path::{Path, PathBuf}, process::exit, rc::Rc};
+use std::{
+    cell::RefCell,
+    env,
+    fs::{self, read_to_string},
+    path::{Path, PathBuf},
+    process::exit,
+    rc::Rc,
+};
 
 use crate::{environment::Environment, object::Value};
 
@@ -69,11 +76,17 @@ fn run_project(dir: &str) {
 
     let tokens = match Lexer::new(root_str.clone(), code.clone()).tokenize() {
         Ok(t) => t,
-        Err(e) => { eprintln!("Lexing Error: {e}"); exit(1); }
+        Err(e) => {
+            eprintln!("Lexing Error: {e}");
+            exit(1);
+        }
     };
     let stmt = match Parser::new(root_str.clone(), code.clone(), tokens).parse() {
         Ok(s) => s,
-        Err(e) => { eprintln!("Parse Error: {e}"); exit(1); }
+        Err(e) => {
+            eprintln!("Parse Error: {e}");
+            exit(1);
+        }
     };
 
     let root_env = Rc::new(RefCell::new(Environment::new()));
@@ -106,7 +119,7 @@ fn run_project(dir: &str) {
                     eprintln!("Error: 'main' field missing or not a string in project map.");
                     exit(1);
                 }
-            }
+            },
             _ => {
                 eprintln!("Error: 'project' must be a map.");
                 exit(1);
@@ -114,10 +127,7 @@ fn run_project(dir: &str) {
         }
     };
 
-    let main_file = Path::new(dir)
-        .join(&main_rel)
-        .to_string_lossy()
-        .to_string();
+    let main_file = Path::new(dir).join(&main_rel).to_string_lossy().to_string();
 
     let dir_abs = Path::new(dir)
         .canonicalize()
@@ -140,15 +150,54 @@ fn run_project_file(path: &str, root_dir: &str) {
     match Lexer::new(path.to_string(), code.clone()).tokenize() {
         Ok(tokens) => match Parser::new(path.to_string(), code.clone(), tokens).parse() {
             Ok(stmt) => {
-                match Interpreter::new_with_root(path.to_string(), code, root_dir.to_string()).exec_stmt(&stmt) {
+                match Interpreter::new_with_root(path.to_string(), code, root_dir.to_string())
+                    .exec_stmt(&stmt)
+                {
                     Ok(_) => {}
-                    Err(e) => { eprintln!("Runtime Error: {e}"); exit(1); }
+                    Err(e) => {
+                        eprintln!("Runtime Error: {e}");
+                        exit(1);
+                    }
                 }
             }
-            Err(e) => { eprintln!("Parse Error: {e}"); exit(1) }
+            Err(e) => {
+                eprintln!("Parse Error: {e}");
+                exit(1)
+            }
+        },
+        Err(e) => {
+            eprintln!("Lexing Error: {e}");
+            exit(1);
         }
-        Err(e) => { eprintln!("Lexing Error: {e}"); exit(1); }
     }
+}
+
+fn init_project(dir: &str) {
+    let path = Path::new(dir);
+    let main_file = "// Modify me too!\nprintln(\"Hello, Zxui!\")\n";
+    let root_file =
+        "// Modify me!\nlet project = {\n    name = \"myproject\",\n    main = \"main.zxui\",\n}\n";
+    match fs::write(path.join("main.zxui"), main_file) {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!(
+                "Error when creating file '{}': {}",
+                path.join("main.zxui").display(),
+                e
+            )
+        }
+    }
+    match fs::write(path.join("root.zxui"), root_file) {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!(
+                "Error when creating file '{}': {}",
+                path.join("root.zxui").display(),
+                e
+            )
+        }
+    }
+    println!("Successfully initialized a project in '{dir}'!")
 }
 
 fn print_usage() {
@@ -172,7 +221,10 @@ fn run() {
                 let dir = args.get(2).map(|s| s.as_str()).unwrap_or(".");
                 run_project(dir);
             }
-            "init" => {}
+            "init" => {
+                let dir = args.get(2).map(|s| s.as_str()).unwrap_or(".");
+                init_project(dir);
+            }
             "help" => print_usage(),
             _ => run_file(path),
         }
