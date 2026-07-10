@@ -396,6 +396,7 @@ impl Interpreter {
                     None => Err(format!("property '{}' does not exist on this object.", key)),
                 }
             }
+            Expr::Import(_) => todo!(),
         }
     }
 

@@ -19,6 +19,7 @@ pub enum TokenType {
     Continue,
     For,
     In,
+    Import,
 
     // Symbols
     Plus,
@@ -104,6 +105,9 @@ impl std::fmt::Display for TokenType {
             }
             TokenType::In => {
                 write!(f, "in")
+            }
+            TokenType::Import => {
+                write!(f, "import")
             }
             TokenType::Plus => {
                 write!(f, "+")

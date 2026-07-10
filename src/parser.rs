@@ -645,6 +645,15 @@ impl Parser {
                 self.consume(TokenType::Rbrace)?;
                 Ok(node)
             }
+            TokenType::Import => {
+                self.consume(TokenType::Import)?;
+                let path = match &self.ct.as_ref().unwrap().ty {
+                    TokenType::String(s) => s.clone(),
+                    _ => return self.error(None, Some(vec![TokenType::String(String::new())])),
+                };
+                self.consume(TokenType::String(path.clone()))?;
+                Ok(Expr::Import(path))
+            }
             TokenType::Identifier(name) => {
                 self.consume(TokenType::Identifier(name.clone()))?;
                 Ok(Expr::Identifier(name))

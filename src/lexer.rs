@@ -348,6 +348,7 @@ impl Lexer {
             "continue" => TokenType::Continue,
             "for" => TokenType::For,
             "in" => TokenType::In,
+            "import" => TokenType::Import,
             _ => TokenType::Identifier(ident.clone()),
         };
         self.add_token(ty, start_line, start_col)

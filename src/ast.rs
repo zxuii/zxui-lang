@@ -7,6 +7,7 @@ pub enum Expr {
     Null,
     Array(Vec<Expr>),
     Map(Vec<Map>),
+    Import(String),
     Unary {
         op: UnaryOp,
         expr: Box<Expr>,
@@ -110,7 +111,6 @@ pub enum Stmt {
         expr: Expr,
         block: Vec<Stmt>,
     },
-    ExprStmt(Expr),
     FunDecl {
         name: String,
         params: Vec<String>,
@@ -119,4 +119,5 @@ pub enum Stmt {
     Break,
     Continue,
     Block(Vec<Stmt>),
+    ExprStmt(Expr),
 }
