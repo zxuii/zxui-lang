@@ -21,39 +21,61 @@ fn main() {
     child.join().unwrap();
 }
 
-fn run() {
-    let args: Vec<String> = env::args().collect();
-    if let Some(path) = args.get(1) {
-        let file = read_to_string(path);
-        match file {
-            Ok(f) => match Lexer::new(path.clone(), f.clone()).tokenize() {
-                Ok(tokens) => match Parser::new(path.clone(), f, tokens).parse() {
-                    Ok(stmt) => match Interpreter::new().exec_stmt(&stmt) {
-                        Ok(_) => {}
+fn run_file(path: &str) {
+    let file = read_to_string(path);
+    match file {
+        Ok(f) => match Lexer::new(path.to_string(), f.clone()).tokenize() {
+            Ok(tokens) => match Parser::new(path.to_string(), f, tokens).parse() {
+                Ok(stmt) => match Interpreter::new().exec_stmt(&stmt) {
+                    Ok(_) => {}
 
-                        Err(e) => {
-                            eprintln!("Runtime Error: {e}");
-                            exit(1)
-                        }
-                    },
                     Err(e) => {
-                        eprintln!("Parse Error: {e}");
+                        eprintln!("Runtime Error: {e}");
                         exit(1)
                     }
                 },
                 Err(e) => {
-                    eprintln!("Lexing Error: {e}");
+                    eprintln!("Parse Error: {e}");
                     exit(1)
                 }
             },
-
             Err(e) => {
-                eprintln!("Error when opening file '{}': {}", path, e);
-                exit(1);
+                eprintln!("Lexing Error: {e}");
+                exit(1)
             }
+        },
+
+        Err(e) => {
+            eprintln!("Error when opening file '{}': {}", path, e);
+            exit(1);
+        }
+    }
+}
+
+fn print_usage() {
+    eprintln!("usage: zxui <command or file>");
+    eprintln!("Commands:");
+    eprintln!("run  [path] - run project. if path is empty,");
+    eprintln!("              it will run project in current dir.");
+    eprintln!("init [path] - init project. if path is empty,");
+    eprintln!("              it will init on current dir.");
+    eprintln!();
+    eprintln!("Args:");
+    eprintln!("<file>      - run single file and cannot be using");
+    eprintln!("              import feature.");
+}
+
+fn run() {
+    let args: Vec<String> = env::args().collect();
+    if let Some(path) = args.get(1) {
+        match path.as_str() {
+            "run" => {}
+            "init" => {}
+            "help" => print_usage(),
+            _ => run_file(path),
         }
     } else {
-        eprintln!("usage: zxui <file.zxui>");
+        print_usage();
         exit(1);
     }
 }
