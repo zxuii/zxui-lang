@@ -1,6 +1,10 @@
+// contoh super kasar dan design awal aja.
+// belum tentu terealisasikan.
+
 let project = {
     name = "example",
     main = "src/main.zxui",
+    deps = {} // name = "version" per deps, optional: name = { ver = "version", git = "git repo link" }
 }
 
 runProject(project)
