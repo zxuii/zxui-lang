@@ -31,11 +31,20 @@ fn run() {
                     Ok(stmt) => match Interpreter::new().exec_stmt(&stmt) {
                         Ok(_) => {}
 
-                        Err(e) => eprintln!("Runtime Error: {e}"),
+                        Err(e) => {
+                            eprintln!("Runtime Error: {e}");
+                            exit(1)
+                        }
                     },
-                    Err(e) => eprintln!("Parse Error: {e}"),
+                    Err(e) => {
+                        eprintln!("Parse Error: {e}");
+                        exit(1)
+                    }
                 },
-                Err(e) => eprintln!("Lexing Error: {e}"),
+                Err(e) => {
+                    eprintln!("Lexing Error: {e}");
+                    exit(1)
+                }
             },
 
             Err(e) => {
