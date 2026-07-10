@@ -3,9 +3,13 @@ use indexmap::IndexMap;
 use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, StmtKind, UnaryOp};
 use crate::builtins::*;
 use crate::environment::Environment;
+use crate::lexer::Lexer;
 use crate::object::Value;
+use crate::parser::Parser;
 
 use std::cell::RefCell;
+use std::fs;
+use std::path::Path;
 use std::rc::Rc;
 
 const MAX_DEPTH: usize = 1000; // 1 call di zxui sama kek 5-6 call di rust
@@ -33,6 +37,7 @@ pub struct Interpreter {
     call_stack: Rc<RefCell<Vec<CallFrame>>>,
     filename: String,
     code: String,
+    root_dir: Option<String>,
 }
 
 impl Interpreter {
@@ -42,6 +47,7 @@ impl Interpreter {
             call_stack: Rc::new(RefCell::new(Vec::new())),
             filename,
             code,
+            root_dir: None,
         };
         interp.define_natives();
         interp
@@ -57,13 +63,31 @@ impl Interpreter {
         call_stack: Rc<RefCell<Vec<CallFrame>>>,
         filename: String,
         code: String,
+        root_dir: Option<String>,
     ) -> Self {
         Self {
             env,
             call_stack,
             filename,
             code,
+            root_dir,
         }
+    }
+
+    pub fn new_with_root(filename: String, code: String, root_dir: String) -> Self {
+        let mut interp = Self {
+            env: Rc::new(RefCell::new(Environment::new())),
+            call_stack: Rc::new(RefCell::new(Vec::new())),
+            filename,
+            code,
+            root_dir: Some(root_dir),
+        };
+        interp.define_natives();
+        interp
+            .call_stack
+            .borrow_mut()
+            .push(CallFrame::new("<script>".to_string(), 0));
+        interp
     }
 
     fn define_natives(&mut self) {
@@ -319,7 +343,9 @@ impl Interpreter {
                         if self.call_stack.borrow().len() >= MAX_DEPTH {
                             let trace = self.build_stack_trace();
                             return Err(self.format_error(
-                                &format!("stack overflow: maximum recursion depth exceed.\n{trace}"),
+                                &format!(
+                                    "stack overflow: maximum recursion depth exceed.\n{trace}"
+                                ),
                                 *line,
                             ));
                         }
@@ -351,6 +377,7 @@ impl Interpreter {
                             Rc::clone(&self.call_stack),
                             self.filename.clone(),
                             self.code.clone(),
+                            self.root_dir.clone(),
                         );
                         let mut return_val = Value::Null;
                         let mut error = None;
@@ -653,7 +680,70 @@ impl Interpreter {
                 self.env.borrow_mut().define(name.clone(), fun);
                 Ok(Signal::None)
             }
-            StmtKind::Import(_) => todo!(),
+            StmtKind::Import(path) => {
+                let root = match &self.root_dir {
+                    Some(r) => r.clone(),
+                    None => {
+                        return Err(
+                            "cannot use 'import' in single-file mode. use 'zxui run' instead."
+                                .into(),
+                        );
+                    }
+                };
+
+                // ngeparse antara "root:src/math" atau "root:math" misalnya
+                let parts: Vec<&str> = path.splitn(2, ':').collect();
+                if parts.len() != 2 || parts[0] != root {
+                    return Err(format!("invalid import path '{}'. format:\"", path));
+                }
+
+                let module_rel = parts[1].replace(':', "/");
+                let module_file = Path::new(&root).join(format!("{}.zxui", module_rel));
+                let module_path_str = module_file.to_string_lossy().to_string();
+
+                let code = fs::read_to_string(&module_file)
+                    .map_err(|e| format!("cannot import '{}': {}", module_path_str, e))?;
+
+                let tokens = Lexer::new(module_path_str.clone(), code.clone())
+                    .tokenize()
+                    .map_err(|e| format!("in module '{}': {}", module_path_str, e))?;
+
+                let stmts = Parser::new(module_path_str.clone(), code.clone(), tokens)
+                    .parse()
+                    .map_err(|e| format!("in module '{}': {}", module_path_str, e))?;
+
+                let module_env = Rc::new(RefCell::new(Environment::new()));
+
+                let mut module_interp = Interpreter::new_env(
+                    module_env.clone(),
+                    Rc::clone(&self.call_stack),
+                    module_path_str.clone(),
+                    code,
+                    Some(root),
+                );
+
+                module_interp.define_natives();
+                module_interp.exec_stmt(&stmts)?;
+
+                let mut map = IndexMap::new();
+                for (k, v) in module_env.borrow().values.iter() {
+                    map.insert(k.clone(), v.clone());
+                }
+
+                // nama utk variable yang nanti akan teresolve diambil dari
+                // bagian terakhir path, misal, "src/math", yang diambil "math"
+                let var_name = module_rel
+                    .split('/')
+                    .last()
+                    .unwrap_or(&module_rel)
+                    .to_string();
+
+                self.env
+                    .borrow_mut()
+                    .define(var_name, Value::Map(Rc::new(RefCell::new(map))));
+
+                Ok(Signal::None)
+            }
         }
     }
 
