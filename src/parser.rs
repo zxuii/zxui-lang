@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Map, Stmt, UnaryOp};
+use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Map, Stmt, StmtKind, UnaryOp};
 use crate::tokens::{Token, TokenType};
 
 pub struct Parser {
@@ -72,11 +72,11 @@ impl Parser {
             "    {}",
             self.code
                 .lines()
-                .nth(self.ct.as_ref().unwrap().line - 1)
-                .unwrap()
+                .nth(self.ct.as_ref().unwrap().line.saturating_sub(1))
+                .unwrap_or("")
         );
         let mut cursor = String::from("    ");
-        for _ in 0..self.ct.as_ref().unwrap().col - 1 {
+        for _ in 0..self.ct.as_ref().unwrap().col.saturating_sub(1) {
             cursor.push(' ');
         }
         cursor.push('^');
@@ -104,15 +104,17 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<Stmt, String> {
-        self.parse_program()
+        let line = self.ct.as_ref().unwrap().line;
+        let kind = self.parse_program()?;
+        Ok(Stmt { kind, line })
     }
 
-    fn parse_program(&mut self) -> Result<Stmt, String> {
+    fn parse_program(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::Program)?;
         if self.ct.as_ref().unwrap().ty == TokenType::Eof {
-            return Ok(Stmt::Program(vec![]));
+            return Ok(StmtKind::Program(vec![]));
         }
-        Ok(Stmt::Program(self.parse_block()?))
+        Ok(StmtKind::Program(self.parse_block()?))
     }
 
     fn parse_block(&mut self) -> Result<Vec<Stmt>, String> {
@@ -130,6 +132,12 @@ impl Parser {
     }
 
     fn parse_stmt(&mut self) -> Result<Stmt, String> {
+        let line = self.ct.as_ref().unwrap().line;
+        let kind = self.parse_stmt_kind()?;
+        Ok(Stmt { kind, line })
+    }
+
+    fn parse_stmt_kind(&mut self) -> Result<StmtKind, String> {
         match self.ct.as_ref().unwrap().ty.clone() {
             TokenType::Fun => self.parse_fun_decl(),
             TokenType::Let => self.parse_var_decl(),
@@ -139,7 +147,7 @@ impl Parser {
                 let stmts = self.parse_block()?;
                 self.depth_counter -= 1;
                 self.consume(TokenType::Rbrace)?;
-                Ok(Stmt::Block(stmts))
+                Ok(StmtKind::Block(stmts))
             }
             TokenType::Identifier(_) => {
                 let expr = self.parse_factor()?;
@@ -153,7 +161,7 @@ impl Parser {
                 ) {
                     self.parse_var_assign(expr)
                 } else {
-                    Ok(Stmt::ExprStmt(expr))
+                    Ok(StmtKind::ExprStmt(expr))
                 }
             }
             TokenType::Return => {
@@ -190,11 +198,11 @@ impl Parser {
                     self.error(Some("continue statement must be inside some loop."), None)
                 }
             }
-            _ => Ok(Stmt::ExprStmt(self.parse_expr()?)),
+            _ => Ok(StmtKind::ExprStmt(self.parse_expr()?)),
         }
     }
 
-    fn parse_fun_decl(&mut self) -> Result<Stmt, String> {
+    fn parse_fun_decl(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::Fun)?;
         let name = match &self.ct.as_ref().unwrap().ty {
             TokenType::Identifier(n) => n.clone(),
@@ -211,7 +219,7 @@ impl Parser {
         self.fun_counter -= 1;
         self.depth_counter -= 1;
         self.consume(TokenType::Rbrace)?;
-        Ok(Stmt::FunDecl { name, params, body })
+        Ok(StmtKind::FunDecl { name, params, body })
     }
 
     fn parse_args(&mut self) -> Result<Vec<Expr>, String> {
@@ -288,18 +296,18 @@ impl Parser {
         Ok(params)
     }
 
-    fn parse_return(&mut self) -> Result<Stmt, String> {
+    fn parse_return(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::Return)?;
         if matches!(
             self.ct.as_ref().unwrap().ty,
             TokenType::Semicolon | TokenType::Rbrace | TokenType::Eof
         ) {
-            return Ok(Stmt::Return(Expr::NoOp));
+            return Ok(StmtKind::Return(Expr::NoOp));
         }
-        Ok(Stmt::Return(self.parse_expr()?))
+        Ok(StmtKind::Return(self.parse_expr()?))
     }
 
-    fn parse_var_decl(&mut self) -> Result<Stmt, String> {
+    fn parse_var_decl(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::Let)?;
         let name = match &self.ct.as_ref().unwrap().ty {
             TokenType::Identifier(n) => n.clone(),
@@ -308,20 +316,20 @@ impl Parser {
         self.consume(TokenType::Identifier(name.clone()))?;
         self.consume(TokenType::Equal)?;
         let expr = self.parse_expr()?;
-        Ok(Stmt::Let { name, expr })
+        Ok(StmtKind::Let { name, expr })
     }
 
-    fn parse_var_assign(&mut self, target: Expr) -> Result<Stmt, String> {
+    fn parse_var_assign(&mut self, target: Expr) -> Result<StmtKind, String> {
         match self.ct.as_ref().unwrap().ty {
             TokenType::Equal => {
                 self.consume(TokenType::Equal)?;
                 let expr = self.parse_expr()?;
-                Ok(Stmt::Assign { target, expr })
+                Ok(StmtKind::Assign { target, expr })
             }
             TokenType::PlusEq => {
                 self.consume(TokenType::PlusEq)?;
                 let expr = self.parse_expr()?;
-                Ok(Stmt::CompAssign {
+                Ok(StmtKind::CompAssign {
                     target,
                     op: BinOp::Plus,
                     expr,
@@ -330,7 +338,7 @@ impl Parser {
             TokenType::MinusEq => {
                 self.consume(TokenType::MinusEq)?;
                 let expr = self.parse_expr()?;
-                Ok(Stmt::CompAssign {
+                Ok(StmtKind::CompAssign {
                     target,
                     op: BinOp::Minus,
                     expr,
@@ -339,7 +347,7 @@ impl Parser {
             TokenType::AsteriskEq => {
                 self.consume(TokenType::AsteriskEq)?;
                 let expr = self.parse_expr()?;
-                Ok(Stmt::CompAssign {
+                Ok(StmtKind::CompAssign {
                     target,
                     op: BinOp::Multiply,
                     expr,
@@ -348,7 +356,7 @@ impl Parser {
             TokenType::SlashEq => {
                 self.consume(TokenType::SlashEq)?;
                 let expr = self.parse_expr()?;
-                Ok(Stmt::CompAssign {
+                Ok(StmtKind::CompAssign {
                     target,
                     op: BinOp::Divide,
                     expr,
@@ -358,17 +366,17 @@ impl Parser {
         }
     }
 
-    fn parse_import(&mut self) -> Result<Stmt, String> {
+    fn parse_import(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::Import)?;
         let path = match &self.ct.as_ref().unwrap().ty {
             TokenType::String(s) => s.clone(),
             _ => return self.error(None, Some(vec![TokenType::String(String::new())])),
         };
         self.consume(TokenType::String(path.clone()))?;
-        Ok(Stmt::Import(path))
+        Ok(StmtKind::Import(path))
     }
 
-    fn parse_if_decl(&mut self) -> Result<Stmt, String> {
+    fn parse_if_decl(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::If)?;
         // self.consume(TokenType::Lparen)?;
         let expr = self.parse_expr()?;
@@ -383,7 +391,9 @@ impl Parser {
             self.consume(TokenType::Else)?;
 
             if self.ct.as_ref().unwrap().ty == TokenType::If {
-                Some(vec![self.parse_if_decl()?])
+                let line = self.ct.as_ref().unwrap().line;
+                let kind = self.parse_if_decl()?;
+                Some(vec![Stmt { kind, line }])
             } else {
                 self.consume(TokenType::Lbrace)?;
                 self.depth_counter += 1;
@@ -395,14 +405,14 @@ impl Parser {
         } else {
             None
         };
-        Ok(Stmt::If {
+        Ok(StmtKind::If {
             expr,
             block,
             else_block,
         })
     }
 
-    fn parse_while(&mut self) -> Result<Stmt, String> {
+    fn parse_while(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::While)?;
         // self.consume(TokenType::Lparen)?;
         let expr = self.parse_expr()?;
@@ -414,20 +424,20 @@ impl Parser {
         self.loop_counter -= 1;
         self.depth_counter -= 1;
         self.consume(TokenType::Rbrace)?;
-        Ok(Stmt::While { expr, block })
+        Ok(StmtKind::While { expr, block })
     }
 
-    fn parse_break(&mut self) -> Result<Stmt, String> {
+    fn parse_break(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::Break)?;
-        Ok(Stmt::Break)
+        Ok(StmtKind::Break)
     }
 
-    fn parse_continue(&mut self) -> Result<Stmt, String> {
+    fn parse_continue(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::Continue)?;
-        Ok(Stmt::Continue)
+        Ok(StmtKind::Continue)
     }
 
-    fn parse_for(&mut self) -> Result<Stmt, String> {
+    fn parse_for(&mut self) -> Result<StmtKind, String> {
         self.consume(TokenType::For)?;
         let name = match &self.ct.as_ref().unwrap().ty {
             TokenType::Identifier(n) => n.clone(),
@@ -443,7 +453,7 @@ impl Parser {
         self.loop_counter -= 1;
         self.depth_counter -= 1;
         self.consume(TokenType::Rbrace)?;
-        Ok(Stmt::For { name, expr, block })
+        Ok(StmtKind::For { name, expr, block })
     }
 
     fn parse_expr(&mut self) -> Result<Expr, String> {

@@ -25,8 +25,8 @@ fn run_file(path: &str) {
     let file = read_to_string(path);
     match file {
         Ok(f) => match Lexer::new(path.to_string(), f.clone()).tokenize() {
-            Ok(tokens) => match Parser::new(path.to_string(), f, tokens).parse() {
-                Ok(stmt) => match Interpreter::new().exec_stmt(&stmt) {
+            Ok(tokens) => match Parser::new(path.to_string(), f.clone(), tokens).parse() {
+                Ok(stmt) => match Interpreter::new(path.to_string(), f).exec_stmt(&stmt) {
                     Ok(_) => {}
 
                     Err(e) => {

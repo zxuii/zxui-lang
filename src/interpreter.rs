@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 
-use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, UnaryOp};
+use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, StmtKind, UnaryOp};
 use crate::builtins::*;
 use crate::environment::Environment;
 use crate::object::Value;
@@ -31,13 +31,17 @@ pub enum Signal {
 pub struct Interpreter {
     env: Rc<RefCell<Environment>>,
     call_stack: Rc<RefCell<Vec<CallFrame>>>,
+    filename: String,
+    code: String,
 }
 
 impl Interpreter {
-    pub fn new() -> Self {
+    pub fn new(filename: String, code: String) -> Self {
         let mut interp = Self {
             env: Rc::new(RefCell::new(Environment::new())),
             call_stack: Rc::new(RefCell::new(Vec::new())),
+            filename,
+            code,
         };
         interp.define_natives();
         interp
@@ -48,8 +52,18 @@ impl Interpreter {
         interp
     }
 
-    pub fn new_env(env: Rc<RefCell<Environment>>, call_stack: Rc<RefCell<Vec<CallFrame>>>) -> Self {
-        Self { env, call_stack }
+    pub fn new_env(
+        env: Rc<RefCell<Environment>>,
+        call_stack: Rc<RefCell<Vec<CallFrame>>>,
+        filename: String,
+        code: String,
+    ) -> Self {
+        Self {
+            env,
+            call_stack,
+            filename,
+            code,
+        }
     }
 
     fn define_natives(&mut self) {
@@ -304,16 +318,20 @@ impl Interpreter {
                     } => {
                         if self.call_stack.borrow().len() >= MAX_DEPTH {
                             let trace = self.build_stack_trace();
-                            return Err(format!(
-                                "stack overflow: maximum recursion depth exceed.\n{trace}"
+                            return Err(self.format_error(
+                                &format!("stack overflow: maximum recursion depth exceed.\n{trace}"),
+                                *line,
                             ));
                         }
 
                         if evaluated_args.len() != params.len() {
-                            return Err(format!(
-                                "function <closure> expects {} args but got {}",
-                                params.len(),
-                                evaluated_args.len()
+                            return Err(self.format_error(
+                                &format!(
+                                    "function <closure> expects {} args but got {}",
+                                    params.len(),
+                                    evaluated_args.len()
+                                ),
+                                *line,
                             ));
                         }
 
@@ -328,8 +346,12 @@ impl Interpreter {
                             .borrow_mut()
                             .push(CallFrame::new(name.clone(), *line));
 
-                        let mut interp =
-                            Interpreter::new_env(call_env, Rc::clone(&self.call_stack));
+                        let mut interp = Interpreter::new_env(
+                            call_env,
+                            Rc::clone(&self.call_stack),
+                            self.filename.clone(),
+                            self.code.clone(),
+                        );
                         let mut return_val = Value::Null;
                         let mut error = None;
                         for stmt in &body {
@@ -370,17 +392,20 @@ impl Interpreter {
 
                     Value::NativeFunction { fun, arity, name } => {
                         if arity != -1 && evaluated_args.len() != arity as usize {
-                            return Err(format!(
-                                "function {}() expects {} args but got {}",
-                                name,
-                                arity,
-                                evaluated_args.len()
+                            return Err(self.format_error(
+                                &format!(
+                                    "function {}() expects {} args but got {}",
+                                    name,
+                                    arity,
+                                    evaluated_args.len()
+                                ),
+                                *line,
                             ));
                         }
                         fun(evaluated_args)
                     }
 
-                    _ => Err("attempted to call a non-function value".into()),
+                    _ => Err(self.format_error("attempted to call a non-function value", *line)),
                 }
             }
 
@@ -440,24 +465,42 @@ impl Interpreter {
     }
 
     pub fn exec_stmt(&mut self, stmt: &Stmt) -> Result<Signal, String> {
-        match stmt {
-            Stmt::Program(stmts) => {
+        self.exec_stmt_kind(&stmt.kind)
+            .map_err(|e| self.attach_line(e, stmt.line))
+    }
+
+    fn attach_line(&self, e: String, line: usize) -> String {
+        if e.contains(" at ") {
+            e
+        } else {
+            self.format_error(&e, line)
+        }
+    }
+
+    fn format_error(&self, msg: &str, line: usize) -> String {
+        let snippet = self.code.lines().nth(line.saturating_sub(1)).unwrap_or("");
+        format!("{} at {}:{}\n    {}", msg, self.filename, line, snippet)
+    }
+
+    fn exec_stmt_kind(&mut self, kind: &StmtKind) -> Result<Signal, String> {
+        match kind {
+            StmtKind::Program(stmts) => {
                 let ret = self.exec_stmts(stmts)?;
                 Ok(ret)
             }
 
-            Stmt::Block(stmts) => {
+            StmtKind::Block(stmts) => {
                 let ret = self.exec_block(stmts)?;
                 Ok(ret)
             }
 
-            Stmt::Let { name, expr } => {
+            StmtKind::Let { name, expr } => {
                 let val = self.eval_expr(expr)?;
                 self.env.borrow_mut().define(name.clone(), val);
                 Ok(Signal::None)
             }
 
-            Stmt::Assign { target, expr } => {
+            StmtKind::Assign { target, expr } => {
                 let val = self.eval_expr(expr)?;
                 match target {
                     Expr::Identifier(name) => {
@@ -481,7 +524,7 @@ impl Interpreter {
                 Ok(Signal::None)
             }
 
-            Stmt::CompAssign { target, op, expr } => {
+            StmtKind::CompAssign { target, op, expr } => {
                 let rhs = self.eval_expr(expr)?;
                 match target {
                     Expr::Identifier(name) => {
@@ -520,7 +563,7 @@ impl Interpreter {
                 Ok(Signal::None)
             }
 
-            Stmt::If {
+            StmtKind::If {
                 expr,
                 block,
                 else_block,
@@ -538,7 +581,7 @@ impl Interpreter {
                 _ => Err("if statement on non-boolean type".into()),
             },
 
-            Stmt::While { expr, block } => {
+            StmtKind::While { expr, block } => {
                 loop {
                     match self.eval_expr(expr)? {
                         Value::Boolean(true) => match self.exec_block(block)? {
@@ -554,7 +597,7 @@ impl Interpreter {
                 Ok(Signal::None)
             }
 
-            Stmt::For { name, expr, block } => {
+            StmtKind::For { name, expr, block } => {
                 let val = self.eval_expr(expr)?;
 
                 let items: Vec<Value> = match val {
@@ -587,20 +630,20 @@ impl Interpreter {
                 Ok(Signal::None)
             }
 
-            Stmt::Return(expr) => {
+            StmtKind::Return(expr) => {
                 let val = self.eval_expr(expr)?;
                 Ok(Signal::Return(Some(val)))
             }
 
-            Stmt::Break => Ok(Signal::Break),
-            Stmt::Continue => Ok(Signal::Continue),
+            StmtKind::Break => Ok(Signal::Break),
+            StmtKind::Continue => Ok(Signal::Continue),
 
-            Stmt::ExprStmt(expr) => {
+            StmtKind::ExprStmt(expr) => {
                 self.eval_expr(expr)?;
                 Ok(Signal::None)
             }
 
-            Stmt::FunDecl { name, params, body } => {
+            StmtKind::FunDecl { name, params, body } => {
                 let fun = Value::Function {
                     name: name.clone(),
                     params: params.clone(),
@@ -610,7 +653,7 @@ impl Interpreter {
                 self.env.borrow_mut().define(name.clone(), fun);
                 Ok(Signal::None)
             }
-            Stmt::Import(_) => todo!(),
+            StmtKind::Import(_) => todo!(),
         }
     }
 

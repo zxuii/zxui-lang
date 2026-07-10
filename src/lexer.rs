@@ -33,10 +33,10 @@ impl Lexer {
             self.filename,
             self.line,
             self.col,
-            self.code_raw.lines().nth(self.line - 1).unwrap()
+            self.code_raw.lines().nth(self.line.saturating_sub(1)).unwrap_or("")
         );
         let mut cursor = String::from("    ");
-        for _ in 0..self.col - 1 {
+        for _ in 0..self.col.saturating_sub(1) {
             cursor.push(' ');
         }
         cursor.push('^');

@@ -80,7 +80,13 @@ pub enum BinOp {
 }
 
 #[derive(Debug, Clone)]
-pub enum Stmt {
+pub struct Stmt {
+    pub kind: StmtKind,
+    pub line: usize,
+}
+
+#[derive(Debug, Clone)]
+pub enum StmtKind {
     Program(Vec<Stmt>),
     Let {
         name: String,
