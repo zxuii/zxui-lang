@@ -1,5 +1,6 @@
 use crate::object::Value;
 
+use indexmap::IndexMap;
 use libloading::{Library, Symbol};
 use std::{
     cell::RefCell,
@@ -406,6 +407,24 @@ pub fn raylib_is_key_down(raylib: Rc<Raylib>) -> Value {
             Ok(Value::Boolean(val))
         }),
     )
+}
+
+pub fn module_raylib() -> IndexMap<String, Value> {
+    let ray = Rc::new(
+        Raylib::new("./raylib/lib/raylib.dll".to_string()).expect("failed to load raylib.dll")
+    );
+
+    let mut map = IndexMap::new();
+    map.insert("initWindow".to_string(),        raylib_init_window(ray.clone()));
+    map.insert("windowShouldClose".to_string(), raylib_windows_should_close(ray.clone()));
+    map.insert("beginDrawing".to_string(),      raylib_begin_drawing(ray.clone()));
+    map.insert("endDrawing".to_string(),        raylib_end_drawing(ray.clone()));
+    map.insert("closeWindow".to_string(),       raylib_close_window(ray.clone()));
+    map.insert("clearBackground".to_string(),   raylib_clear_background(ray.clone()));
+    map.insert("drawRectangle".to_string(),     raylib_draw_rectangle(ray.clone()));
+    map.insert("isKeyDown".to_string(),         raylib_is_key_down(ray.clone()));
+    map.insert("getFrameTime".to_string(),      raylib_get_frame_time(ray));
+    map
 }
 
 // -------------------- UNTUK NATIVE BIASA --------------------------

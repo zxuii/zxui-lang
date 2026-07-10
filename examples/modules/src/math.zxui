@@ -11,4 +11,3 @@ fun max(xs) {
     }
 
     return max
-}

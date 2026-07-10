@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, StmtKind, UnaryOp};
-use crate::builtins::*;
+use crate::builtins::{self, *};
 use crate::environment::Environment;
 use crate::lexer::Lexer;
 use crate::object::Value;
@@ -91,44 +91,6 @@ impl Interpreter {
     }
 
     fn define_natives(&mut self) {
-        // raylibs
-        let ray = Rc::new(
-            Raylib::new("./raylib/lib/raylib.dll".to_string()).expect("failed to load raylib.dll"), // jujur aja aku males banget kalau disuruh support multi platform, tetek bengek harus bundling dll ini ke executable, dsb. yang penting work di gw mah fine aja
-        );
-
-        self.env
-            .borrow_mut()
-            .define("initWindow".to_string(), raylib_init_window(ray.clone()));
-        self.env.borrow_mut().define(
-            "windowShouldClose".to_string(),
-            raylib_windows_should_close(ray.clone()),
-        );
-        self.env.borrow_mut().define(
-            "beginDrawing".to_string(),
-            raylib_begin_drawing(ray.clone()),
-        );
-        self.env
-            .borrow_mut()
-            .define("endDrawing".to_string(), raylib_end_drawing(ray.clone()));
-        self.env
-            .borrow_mut()
-            .define("closeWindow".to_string(), raylib_close_window(ray.clone()));
-        self.env.borrow_mut().define(
-            "clearBackground".to_string(),
-            raylib_clear_background(ray.clone()),
-        );
-        self.env.borrow_mut().define(
-            "drawRectangle".to_string(),
-            raylib_draw_rectangle(ray.clone()),
-        );
-        self.env
-            .borrow_mut()
-            .define("isKeyDown".to_string(), raylib_is_key_down(ray.clone()));
-        self.env
-            .borrow_mut()
-            .define("getFrameTime".to_string(), raylib_get_frame_time(ray));
-
-        // langs
         self.env.borrow_mut().define(
             "println".to_string(),
             Value::native_fun("println".to_string(), -1, Rc::new(native_println)),
@@ -693,54 +655,70 @@ impl Interpreter {
 
                 // ngeparse antara "root:src/math" atau "root:math" misalnya
                 let parts: Vec<&str> = path.splitn(2, ':').collect();
-                if parts.len() != 2 || parts[0] != "root" {
-                    return Err(format!("invalid import path '{}'. format:\"", path));
+                if parts.len() != 2 {
+                    return Err(format!("invalid import path '{}'.", path));
                 }
 
-                let module_rel = parts[1].replace(':', "/");
-                let module_file = Path::new(&root).join(format!("{}.zxui", module_rel));
-                let module_path_str = module_file.to_string_lossy().to_string();
+                match parts[0] {
+                    "builtin" => {
+                        let map = match parts[1] {
+                            "raylib" => builtins::module_raylib(),
+                            other => return Err(format!("unknown builtin module '{}'", other)),
+                        };
+                        self.env
+                            .borrow_mut()
+                            .define(parts[1].to_string(), Value::Map(Rc::new(RefCell::new(map))));
+                    }
 
-                let code = fs::read_to_string(&module_file)
-                    .map_err(|e| format!("cannot import '{}': {}", module_path_str, e))?;
+                    "root" => {
+                        let module_rel = parts[1].replace(':', "/");
+                        let module_file = Path::new(&root).join(format!("{}.zxui", module_rel));
+                        let module_path_str = module_file.to_string_lossy().to_string();
 
-                let tokens = Lexer::new(module_path_str.clone(), code.clone())
-                    .tokenize()
-                    .map_err(|e| format!("Lexing Error: {e}"))?;
+                        let code = fs::read_to_string(&module_file)
+                            .map_err(|e| format!("cannot import '{}': {}", module_path_str, e))?;
 
-                let stmts = Parser::new(module_path_str.clone(), code.clone(), tokens)
-                    .parse()
-                    .map_err(|e| format!("Parse Error: {e}"))?;
+                        let tokens = Lexer::new(module_path_str.clone(), code.clone())
+                            .tokenize()
+                            .map_err(|e| format!("Lexing Error: {e}"))?;
 
-                let module_env = Rc::new(RefCell::new(Environment::new()));
+                        let stmts = Parser::new(module_path_str.clone(), code.clone(), tokens)
+                            .parse()
+                            .map_err(|e| format!("Parse Error: {e}"))?;
 
-                let mut module_interp = Interpreter::new_env(
-                    module_env.clone(),
-                    Rc::clone(&self.call_stack),
-                    module_path_str.clone(),
-                    code,
-                    Some(root),
-                );
+                        let module_env = Rc::new(RefCell::new(Environment::new()));
 
-                module_interp.define_natives();
-                module_interp.exec_stmt(&stmts)?;
+                        let mut module_interp = Interpreter::new_env(
+                            module_env.clone(),
+                            Rc::clone(&self.call_stack),
+                            module_path_str.clone(),
+                            code,
+                            Some(root),
+                        );
 
-                let mut map = IndexMap::new();
-                for (k, v) in module_env.borrow().values.iter() {
-                    map.insert(k.clone(), v.clone());
+                        module_interp.define_natives();
+                        module_interp.exec_stmt(&stmts)?;
+
+                        let mut map = IndexMap::new();
+                        for (k, v) in module_env.borrow().values.iter() {
+                            map.insert(k.clone(), v.clone());
+                        }
+
+                        // nama utk variable yang nanti akan teresolve diambil dari
+                        // bagian terakhir path, misal, "src/math", yang diambil "math"
+                        let var_name = module_rel
+                            .split('/')
+                            .last()
+                            .unwrap_or(&module_rel)
+                            .to_string();
+
+                        self.env
+                            .borrow_mut()
+                            .define(var_name, Value::Map(Rc::new(RefCell::new(map))));
+                    }
+
+                    other => return Err(format!("unknown import scheme '{}'", other)),
                 }
-
-                // nama utk variable yang nanti akan teresolve diambil dari
-                // bagian terakhir path, misal, "src/math", yang diambil "math"
-                let var_name = module_rel
-                    .split('/')
-                    .last()
-                    .unwrap_or(&module_rel)
-                    .to_string();
-
-                self.env
-                    .borrow_mut()
-                    .define(var_name, Value::Map(Rc::new(RefCell::new(map))));
 
                 Ok(Signal::None)
             }

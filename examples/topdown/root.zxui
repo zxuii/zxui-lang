@@ -1,0 +1,5 @@
+let project = {
+    name = "example",
+    main = "main.zxui",
+    deps = {} // name = "version" per deps, optional: name = { ver = "version", git = "git repo link" }
+}
