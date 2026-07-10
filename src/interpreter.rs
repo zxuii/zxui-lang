@@ -693,7 +693,7 @@ impl Interpreter {
 
                 // ngeparse antara "root:src/math" atau "root:math" misalnya
                 let parts: Vec<&str> = path.splitn(2, ':').collect();
-                if parts.len() != 2 || parts[0] != root {
+                if parts.len() != 2 || parts[0] != "root" {
                     return Err(format!("invalid import path '{}'. format:\"", path));
                 }
 
