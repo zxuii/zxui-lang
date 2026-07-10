@@ -1,0 +1,14 @@
+fun square(x) {
+    return x * x
+}
+
+fun max(xs) {
+    let max = xs[0]
+    for x in xs {
+        if x > max {
+            max = x
+        }
+    }
+
+    return max
+}

@@ -1,0 +1,6 @@
+let project = {
+    name = "example",
+    main = "src/main.zxui",
+}
+
+runProject(project)
