@@ -174,6 +174,15 @@ fn run_project_file(path: &str, root_dir: &str) {
 
 fn init_project(dir: &str) {
     let path = Path::new(dir);
+    if !path.exists() {
+        match fs::create_dir(dir) {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Error when creating directory '{dir}': {e}");
+                exit(1);
+            }
+        }
+    }
     let main_file = "// Modify me too!\nprintln(\"Hello, Zxui!\")\n";
     let root_file =
         "// Modify me!\nlet project = {\n    name = \"myproject\",\n    main = \"main.zxui\",\n}\n";
@@ -184,7 +193,8 @@ fn init_project(dir: &str) {
                 "Error when creating file '{}': {}",
                 path.join("main.zxui").display(),
                 e
-            )
+            );
+            exit(1);
         }
     }
     match fs::write(path.join("root.zxui"), root_file) {
@@ -194,7 +204,8 @@ fn init_project(dir: &str) {
                 "Error when creating file '{}': {}",
                 path.join("root.zxui").display(),
                 e
-            )
+            );
+            exit(1);
         }
     }
     println!("Successfully initialized a project in '{dir}'!")
