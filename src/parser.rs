@@ -10,6 +10,7 @@ pub struct Parser {
 
     fun_counter: usize,
     loop_counter: usize,
+    depth_counter: usize,
 }
 
 impl Parser {
@@ -22,6 +23,7 @@ impl Parser {
             ct: None,
             fun_counter: 0,
             loop_counter: 0,
+            depth_counter: 0,
         };
         parser.advance();
         parser
@@ -133,7 +135,9 @@ impl Parser {
             TokenType::Let => self.parse_var_decl(),
             TokenType::Lbrace => {
                 self.consume(TokenType::Lbrace)?;
+                self.depth_counter += 1;
                 let stmts = self.parse_block()?;
+                self.depth_counter -= 1;
                 self.consume(TokenType::Rbrace)?;
                 Ok(Stmt::Block(stmts))
             }
@@ -159,7 +163,16 @@ impl Parser {
                     self.error(Some("return statement must be inside some function."), None)
                 }
             }
-            TokenType::Import => self.parse_import(),
+            TokenType::Import => {
+                if self.depth_counter == 0 {
+                    self.parse_import()
+                } else {
+                    self.error(
+                        Some("import statement must be at top-level declaration"),
+                        None,
+                    )
+                }
+            }
             TokenType::If => self.parse_if_decl(),
             TokenType::While => self.parse_while(),
             TokenType::For => self.parse_for(),
@@ -193,8 +206,10 @@ impl Parser {
         self.consume(TokenType::Rparen)?;
         self.consume(TokenType::Lbrace)?;
         self.fun_counter += 1;
+        self.depth_counter += 1;
         let body = self.parse_block()?;
         self.fun_counter -= 1;
+        self.depth_counter -= 1;
         self.consume(TokenType::Rbrace)?;
         Ok(Stmt::FunDecl { name, params, body })
     }
@@ -359,7 +374,9 @@ impl Parser {
         let expr = self.parse_expr()?;
         // self.consume(TokenType::Rparen)?;
         self.consume(TokenType::Lbrace)?;
+        self.depth_counter += 1;
         let block = self.parse_block()?;
+        self.depth_counter -= 1;
         self.consume(TokenType::Rbrace)?;
 
         let else_block = if self.ct.as_ref().unwrap().ty == TokenType::Else {
@@ -369,7 +386,9 @@ impl Parser {
                 Some(vec![self.parse_if_decl()?])
             } else {
                 self.consume(TokenType::Lbrace)?;
+                self.depth_counter += 1;
                 let stmts = self.parse_block()?;
+                self.depth_counter -= 1;
                 self.consume(TokenType::Rbrace)?;
                 Some(stmts)
             }
@@ -390,8 +409,10 @@ impl Parser {
         // self.consume(TokenType::Rparen)?;
         self.consume(TokenType::Lbrace)?;
         self.loop_counter += 1;
+        self.depth_counter += 1;
         let block = self.parse_block()?;
         self.loop_counter -= 1;
+        self.depth_counter -= 1;
         self.consume(TokenType::Rbrace)?;
         Ok(Stmt::While { expr, block })
     }
@@ -417,8 +438,10 @@ impl Parser {
         let expr = self.parse_expr()?;
         self.consume(TokenType::Lbrace)?;
         self.loop_counter += 1;
+        self.depth_counter += 1;
         let block = self.parse_block()?;
         self.loop_counter -= 1;
+        self.depth_counter -= 1;
         self.consume(TokenType::Rbrace)?;
         Ok(Stmt::For { name, expr, block })
     }
