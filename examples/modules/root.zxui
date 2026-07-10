@@ -6,5 +6,3 @@ let project = {
     main = "src/main.zxui",
     deps = {} // name = "version" per deps, optional: name = { ver = "version", git = "git repo link" }
 }
-
-runProject(project)
