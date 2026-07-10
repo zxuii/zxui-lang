@@ -396,7 +396,6 @@ impl Interpreter {
                     None => Err(format!("property '{}' does not exist on this object.", key)),
                 }
             }
-            Expr::Import(_) => todo!(),
         }
     }
 
@@ -611,6 +610,7 @@ impl Interpreter {
                 self.env.borrow_mut().define(name.clone(), fun);
                 Ok(Signal::None)
             }
+            Stmt::Import(_) => todo!(),
         }
     }
 

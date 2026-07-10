@@ -159,6 +159,7 @@ impl Parser {
                     self.error(Some("return statement must be inside some function."), None)
                 }
             }
+            TokenType::Import => self.parse_import(),
             TokenType::If => self.parse_if_decl(),
             TokenType::While => self.parse_while(),
             TokenType::For => self.parse_for(),
@@ -340,6 +341,16 @@ impl Parser {
             }
             _ => unreachable!("harusnya ini ga akan pernah tercapai sama sekali..."),
         }
+    }
+
+    fn parse_import(&mut self) -> Result<Stmt, String> {
+        self.consume(TokenType::Import)?;
+        let path = match &self.ct.as_ref().unwrap().ty {
+            TokenType::String(s) => s.clone(),
+            _ => return self.error(None, Some(vec![TokenType::String(String::new())])),
+        };
+        self.consume(TokenType::String(path.clone()))?;
+        Ok(Stmt::Import(path))
     }
 
     fn parse_if_decl(&mut self) -> Result<Stmt, String> {
@@ -644,15 +655,6 @@ impl Parser {
                 let node = Expr::Map(self.parse_map_literal()?);
                 self.consume(TokenType::Rbrace)?;
                 Ok(node)
-            }
-            TokenType::Import => {
-                self.consume(TokenType::Import)?;
-                let path = match &self.ct.as_ref().unwrap().ty {
-                    TokenType::String(s) => s.clone(),
-                    _ => return self.error(None, Some(vec![TokenType::String(String::new())])),
-                };
-                self.consume(TokenType::String(path.clone()))?;
-                Ok(Expr::Import(path))
             }
             TokenType::Identifier(name) => {
                 self.consume(TokenType::Identifier(name.clone()))?;

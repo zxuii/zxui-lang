@@ -7,7 +7,6 @@ pub enum Expr {
     Null,
     Array(Vec<Expr>),
     Map(Vec<Map>),
-    Import(String),
     Unary {
         op: UnaryOp,
         expr: Box<Expr>,
@@ -102,6 +101,7 @@ pub enum Stmt {
         block: Vec<Stmt>,
         else_block: Option<Vec<Stmt>>,
     },
+    Import(String),
     While {
         expr: Expr,
         block: Vec<Stmt>,
