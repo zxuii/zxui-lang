@@ -680,11 +680,11 @@ impl Interpreter {
 
                         let tokens = Lexer::new(module_path_str.clone(), code.clone())
                             .tokenize()
-                            .map_err(|e| format!("Lexing Error: {e}"))?;
+                            .map_err(|e| format!("In Import '{}' Lexing Error: {}", path, e))?;
 
                         let stmts = Parser::new(module_path_str.clone(), code.clone(), tokens)
                             .parse()
-                            .map_err(|e| format!("Parse Error: {e}"))?;
+                            .map_err(|e| format!("In Import '{}' Parse Error: {}", path, e))?;
 
                         let module_env = Rc::new(RefCell::new(Environment::new()));
 
