@@ -533,6 +533,12 @@ Jujur aja untuk crafting interpreters ini bukunya bagus, tapi.... tapi nih ya...
 
 Niatnya aku mau mempublikasikan proses pembuatan bahasa pemrograman ini di youtube channel [@TelurTerbulat](https://youtube.com/@TelurTerbulat). yaa semoga aja aku punya niat ngedit wkwk.
 
+## Next TODO
+
+Pengenalan: ini adalah section khusus yang akan terus berubah seiring berjalannya waktu, disini akan menceritakan apa aja yang aku lakukan dan apa yang aku ingin lakukan.
+
+Aku ingin membuat sistem FFI di bahasa pemrograman ini secara langsung, jadi aku tak perlu lagi menyentuh builtins.rs untuk melakukan FFI terhadap raylib dkk.
+
 ## Penutup
 
 Singkatnya, bahasa pemrograman ini masih berstatus belum selesai dan masih terus akan diupdate sampai kapanpun aku mood.
