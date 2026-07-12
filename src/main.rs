@@ -95,8 +95,8 @@ fn run_project(dir: &str) {
     let mut root_interp = Interpreter::new_env(
         root_env.clone(),
         Rc::new(RefCell::new(vec![])),
-        root_str,
-        code,
+        Rc::from(root_str),
+        Rc::from(code),
         None,
     );
 
@@ -152,7 +152,7 @@ fn run_project_file(path: &str, root_dir: &str) {
     match Lexer::new(path.to_string(), code.clone()).tokenize() {
         Ok(tokens) => match Parser::new(path.to_string(), code.clone(), tokens).parse() {
             Ok(stmt) => {
-                match Interpreter::new_with_root(path.to_string(), code, root_dir.to_string())
+                match Interpreter::new_with_root(Rc::from(path), Rc::from(code), Rc::from(root_dir))
                     .exec_stmt(&stmt)
                 {
                     Ok(_) => {}

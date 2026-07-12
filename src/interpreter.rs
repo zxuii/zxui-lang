@@ -35,9 +35,9 @@ pub enum Signal {
 pub struct Interpreter {
     env: Rc<RefCell<Environment>>,
     call_stack: Rc<RefCell<Vec<CallFrame>>>,
-    filename: String,
-    code: String,
-    root_dir: Option<String>,
+    filename: Rc<str>,
+    code: Rc<str>,
+    root_dir: Option<Rc<str>>,
 }
 
 impl Interpreter {
@@ -45,8 +45,8 @@ impl Interpreter {
         let mut interp = Self {
             env: Rc::new(RefCell::new(Environment::new())),
             call_stack: Rc::new(RefCell::new(Vec::new())),
-            filename,
-            code,
+            filename: Rc::from(filename),
+            code: Rc::from(code),
             root_dir: None,
         };
         interp.define_natives();
@@ -61,9 +61,9 @@ impl Interpreter {
     pub fn new_env(
         env: Rc<RefCell<Environment>>,
         call_stack: Rc<RefCell<Vec<CallFrame>>>,
-        filename: String,
-        code: String,
-        root_dir: Option<String>,
+        filename: Rc<str>,
+        code: Rc<str>,
+        root_dir: Option<Rc<str>>,
     ) -> Self {
         Self {
             env,
@@ -74,12 +74,12 @@ impl Interpreter {
         }
     }
 
-    pub fn new_with_root(filename: String, code: String, root_dir: String) -> Self {
+    pub fn new_with_root(filename: Rc<str>, code: Rc<str>, root_dir: Rc<str>) -> Self {
         let mut interp = Self {
             env: Rc::new(RefCell::new(Environment::new())),
             call_stack: Rc::new(RefCell::new(Vec::new())),
-            filename,
-            code,
+            filename: filename,
+            code: code,
             root_dir: Some(root_dir),
         };
         interp.define_natives();
@@ -436,7 +436,7 @@ impl Interpreter {
 
         let mut interp = Interpreter::new_env(
             call_env,
-            Rc::clone(&self.call_stack),
+            self.call_stack.clone(),
             self.filename.clone(),
             self.code.clone(),
             self.root_dir.clone(),
@@ -732,7 +732,7 @@ impl Interpreter {
 
                     "root" => {
                         let module_rel = parts[1].replace(':', "/");
-                        let module_file = Path::new(&root).join(format!("{}.zxui", module_rel));
+                        let module_file = Path::new(&root.to_string()).join(format!("{}.zxui", module_rel));
                         let module_path_str = module_file.to_string_lossy().to_string();
 
                         let code = fs::read_to_string(&module_file)
@@ -750,9 +750,9 @@ impl Interpreter {
 
                         let mut module_interp = Interpreter::new_env(
                             module_env.clone(),
-                            Rc::clone(&self.call_stack),
-                            module_path_str.clone(),
-                            code,
+                            self.call_stack.clone(),
+                            Rc::from(module_path_str),
+                            Rc::from(code),
                             Some(root),
                         );
 
