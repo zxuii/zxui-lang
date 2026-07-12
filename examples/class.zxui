@@ -1,0 +1,38 @@
+class Person {
+    fun init(self, name, age) {
+        self.name = name;
+        self.age = age;
+    }
+
+    fun greet(self) {
+        println("Hello, ", self.name, ". Your age is: ", self.age);
+    }
+}
+
+class Animal {
+    fun init(self) {
+        self.type  = "Dog";
+        self.speak = "Woof!";
+    }
+
+    fun speak(self) {
+        println("The ", self.type, "say ", self.speak);
+    }
+}
+
+class Cat : Animal {
+    fun init(self) {
+        super.init(self);
+        self.type  = "Cat";
+        self.speak = "Meow!";
+    }
+}
+
+let p = Person("john", 12);
+p.greet()
+
+let d = Animal();
+d.speak();
+
+let c = Cat();
+c.speak();
