@@ -36,7 +36,7 @@ fn run_file(path: &str) {
         Ok(f) => match Lexer::new(path.to_string(), f.clone()).tokenize() {
             Ok(tokens) => match Parser::new(path.to_string(), f.clone(), tokens).parse() {
                 Ok(stmt) => {
-                    println!("{:#?}", stmt);
+                    // println!("{:#?}", stmt);
                     match Interpreter::new(path.to_string(), f).exec_stmt(&stmt) {
                     Ok(_) => {}
 
