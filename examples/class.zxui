@@ -7,6 +7,10 @@ class Person {
     fun greet() {
         println("Hello, ", self.name, ". Your age is: ", self.age);
     }
+
+    static fun default() {
+        return Person("john", 15)
+    }
 }
 
 class Animal {
@@ -22,14 +26,17 @@ class Animal {
 
 class Cat : Animal {
     fun init() {
-        super.init();
+        // super.init();
         self.type  = "Cat";
         self.say = "Meow!";
     }
 }
 
-let p = Person("john", 12);
+let p = Person("Pak dudung", 18);
 p.greet()
+
+let dp = Person.default();
+dp.greet()
 
 let d = Animal();
 d.speak();
