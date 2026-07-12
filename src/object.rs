@@ -35,6 +35,26 @@ impl NativeData {
 }
 
 #[derive(Clone)]
+pub struct ClassData {
+    pub name: String,
+    pub methods: IndexMap<String, Rc<FunData>>,
+    pub superclass: Option<Rc<ClassData>>,
+}
+
+impl ClassData {
+    pub fn new(name: String, methods: IndexMap<String, Rc<FunData>>, superclass: Option<Rc<ClassData>>) -> Self {
+        Self {
+            name, methods, superclass,
+        }
+    }
+}
+
+pub struct InstanceData {
+    pub class: Rc<ClassData>,
+    pub fields: RefCell<IndexMap<String, Value>>,
+}
+
+#[derive(Clone)]
 pub enum Value {
     Null,
     Number(f64),
@@ -44,6 +64,8 @@ pub enum Value {
     Map(Rc<RefCell<IndexMap<String, Value>>>),
     Function(FunData),
     NativeFunction(NativeData),
+    Class(Rc<ClassData>),
+    Instance(Rc<InstanceData>),
 }
 
 impl Value {
@@ -106,6 +128,8 @@ impl Value {
             }
             Value::Function(fun) => write!(f, "[fun {}]", fun.name),
             Value::NativeFunction(fun) => write!(f, "[native fun {}]", fun.name),
+            Value::Class(c) => write!(f, "[class {}]", c.name),
+            Value::Instance(i) => write!(f, "[instance of {}", i.class.name),
         }
     }
 }

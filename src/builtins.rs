@@ -466,6 +466,8 @@ pub fn native_typeof(args: Vec<Value>) -> Result<Value, String> {
         Value::Boolean(_) => Ok(Value::String("boolean".to_string())),
         Value::Null => Ok(Value::String("null".to_string())),
         Value::NativeFunction(_) => Ok(Value::String("native fun".to_string())),
+        Value::Class(_) => Ok(Value::String("class".to_string())),
+        Value::Instance(_) => Ok(Value::String("instance".to_string())),
     }
 }
 
@@ -509,7 +511,10 @@ pub fn native_boolean(args: Vec<Value>) -> Result<Value, String> {
         Value::String(str) => Ok(Value::Boolean(!str.is_empty())),
         Value::Array(arr) => Ok(Value::Boolean(!arr.borrow().is_empty())),
         Value::Map(map) => Ok(Value::Boolean(!map.borrow().is_empty())),
-        Value::Function { .. } | Value::NativeFunction { .. } => Ok(Value::Boolean(true)),
+        Value::Function { .. }
+        | Value::NativeFunction { .. }
+        | Value::Class(_)
+        | Value::Instance(_) => Ok(Value::Boolean(true)),
     }
 }
 

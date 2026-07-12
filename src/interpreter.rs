@@ -4,7 +4,7 @@ use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, StmtKind, UnaryOp};
 use crate::builtins::{self, *};
 use crate::environment::Environment;
 use crate::lexer::Lexer;
-use crate::object::{FunData, Value};
+use crate::object::{ClassData, FunData, InstanceData, Value};
 use crate::parser::Parser;
 
 use std::cell::RefCell;
@@ -296,83 +296,14 @@ impl Interpreter {
                 let evaluated_args = evaluated_args?;
 
                 match fun {
-                    Value::Function(f) => {
-                        if self.call_stack.borrow().len() >= MAX_DEPTH {
-                            let trace = self.build_stack_trace();
-                            return Err(self.format_error(
-                                &format!(
-                                    "stack overflow: maximum recursion depth exceed.\n{trace}"
-                                ),
-                                *line,
-                            ));
-                        }
-
-                        if evaluated_args.len() != f.params.len() {
-                            return Err(self.format_error(
-                                &format!(
-                                    "function <closure> expects {} args but got {}",
-                                    f.params.len(),
-                                    evaluated_args.len()
-                                ),
-                                *line,
-                            ));
-                        }
-
-                        let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(
-                            Rc::clone(&f.closure),
-                        ))));
-                        for (param, arg) in f.params.iter().zip(evaluated_args) {
-                            call_env.borrow_mut().define(param.clone(), arg);
-                        }
-
-                        self.call_stack
-                            .borrow_mut()
-                            .push(CallFrame::new(f.name.clone(), *line));
-
-                        let mut interp = Interpreter::new_env(
-                            call_env,
-                            Rc::clone(&self.call_stack),
-                            self.filename.clone(),
-                            self.code.clone(),
-                            self.root_dir.clone(),
-                        );
-                        let mut return_val = Value::Null;
-                        let mut error = None;
-                        for stmt in &f.body {
-                            match interp.exec_stmt(stmt) {
-                                Ok(Signal::Return(val)) => {
-                                    return_val = val.unwrap_or(Value::Null);
-                                    break;
-                                }
-                                Ok(Signal::Break) | Ok(Signal::Continue) => {
-                                    unreachable!(
-                                        "Harusnya ini ga akan pernah tercapai karena sudah di handle di parser. jaga-jaga aja."
-                                    )
-                                }
-                                Ok(Signal::None) => {}
-                                Err(e) => {
-                                    error = Some(e);
-                                    break;
-                                }
-                            }
-                        }
-
-                        match &mut error {
-                            Some(e) if !e.contains("stack trace:") => {
-                                let trace = self.build_stack_trace();
-                                *e = format!("{}\n{}", e, trace);
-                            }
-
-                            _ => {}
-                        }
-
-                        self.call_stack.borrow_mut().pop();
-
-                        match error {
-                            Some(e) => Err(e),
-                            None => Ok(return_val),
-                        }
-                    }
+                    Value::Function(f) => self.call_user_function(
+                        f.name,
+                        f.params,
+                        f.body,
+                        f.closure,
+                        evaluated_args,
+                        *line,
+                    ),
 
                     Value::NativeFunction(f) => {
                         if f.arity != -1 && evaluated_args.len() != f.arity as usize {
@@ -389,24 +320,161 @@ impl Interpreter {
                         (f.fun)(evaluated_args)
                     }
 
+                    Value::Class(class) => {
+                        let instance = Rc::new(InstanceData {
+                            class: Rc::clone(&class),
+                            fields: RefCell::new(IndexMap::new()),
+                        });
+
+                        if let Some(init_fun) = find_method(&class, "init") {
+                            let bound =
+                                bind_method(&init_fun, Value::Instance(Rc::clone(&instance)));
+                            if let Value::Function(f) = bound {
+                                self.call_user_function(
+                                    f.name,
+                                    f.params,
+                                    f.body,
+                                    f.closure,
+                                    evaluated_args,
+                                    *line,
+                                )?;
+                            }
+                        } else if !evaluated_args.is_empty() {
+                            return Err(self.format_error(
+                                &format!(
+                                    "class '{}' has no 'init' method but got {} arg(s).",
+                                    class.name,
+                                    evaluated_args.len()
+                                ),
+                                *line,
+                            ));
+                        }
+
+                        Ok(Value::Instance(instance))
+                    }
+
                     _ => Err(self.format_error("attempted to call a non-function value", *line)),
                 }
             }
-
             Expr::Index { target, index } => {
                 let (arr, i) = self.resolve_array_index(target, index)?;
                 Ok(arr.borrow()[i].clone())
             }
 
             Expr::Get { target, name } => {
-                let (map, key) = self.resolve_map_property(target, name)?;
-                match map.borrow().get(&key) {
-                    Some(val) => Ok(val.clone()),
-                    None => Err(format!("property '{}' does not exist on this object.", key)),
+                let prop = self.resolve_property(target)?;
+                if let Some(val) = prop.get(name) {
+                    return Ok(val);
                 }
+
+                if let PropertyTarget::Instance(inst) = &prop {
+                    if let Some(fun) = find_method(&inst.class, name) {
+                        return Ok(bind_method(&fun, Value::Instance(Rc::clone(inst))));
+                    }
+                }
+                Err(format!(
+                    "property '{}' does not exist on this object.",
+                    name
+                ))
             }
 
-            _ => todo!(),
+            Expr::SelfExpr => self.env.borrow().get("self".to_string()),
+
+            Expr::Super { method } => {
+                let superclass = match self.env.borrow().get("super".to_string())? {
+                    Value::Class(c) => c,
+                    _ => return Err("'super' resolved to non-class value.".into()),
+                };
+                let instance = self.env.borrow().get("self".to_string())?;
+
+                match find_method(&superclass, method) {
+                    Some(fun_data) => Ok(bind_method(&fun_data, instance)),
+                    None => Err(format!("undefined method '{method}' in superclass")),
+                }
+            }
+        }
+    }
+
+    fn call_user_function(
+        &self,
+        name: String,
+        params: Vec<String>,
+        body: Vec<Stmt>,
+        closure: Rc<RefCell<Environment>>,
+        evaluated_args: Vec<Value>,
+        line: usize,
+    ) -> Result<Value, String> {
+        if self.call_stack.borrow().len() >= MAX_DEPTH {
+            let trace = self.build_stack_trace();
+            return Err(self.format_error(
+                &format!("stack overflow: maximum recursion depth exceed.\n{trace}"),
+                line,
+            ));
+        }
+
+        if evaluated_args.len() != params.len() {
+            return Err(self.format_error(
+                &format!(
+                    "function <closure> expects {} args but got {}",
+                    params.len(),
+                    evaluated_args.len()
+                ),
+                line,
+            ));
+        }
+
+        let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(Rc::clone(
+            &closure,
+        )))));
+        for (param, arg) in params.iter().zip(evaluated_args) {
+            call_env.borrow_mut().define(param.clone(), arg);
+        }
+
+        self.call_stack
+            .borrow_mut()
+            .push(CallFrame::new(name.clone(), line));
+
+        let mut interp = Interpreter::new_env(
+            call_env,
+            Rc::clone(&self.call_stack),
+            self.filename.clone(),
+            self.code.clone(),
+            self.root_dir.clone(),
+        );
+        let mut return_val = Value::Null;
+        let mut error = None;
+        for stmt in &body {
+            match interp.exec_stmt(stmt) {
+                Ok(Signal::Return(val)) => {
+                    return_val = val.unwrap_or(Value::Null);
+                    break;
+                }
+                Ok(Signal::Break) | Ok(Signal::Continue) => {
+                    unreachable!(
+                        "Harusnya ini ga akan pernah tercapai karena sudah di handle di parser. jaga-jaga aja."
+                    )
+                }
+                Ok(Signal::None) => {}
+                Err(e) => {
+                    error = Some(e);
+                    break;
+                }
+            }
+        }
+
+        match &mut error {
+            Some(e) if !e.contains("stack trace:") => {
+                let trace = self.build_stack_trace();
+                *e = format!("{}\n{}", e, trace);
+            }
+            _ => {}
+        }
+
+        self.call_stack.borrow_mut().pop();
+
+        match error {
+            Some(e) => Err(e),
+            None => Ok(return_val),
         }
     }
 
@@ -497,13 +565,8 @@ impl Interpreter {
                         arr.borrow_mut()[i] = val;
                     }
                     Expr::Get { target, name } => {
-                        let target_val = self.eval_expr(target)?;
-                        match target_val {
-                            Value::Map(map) => {
-                                map.borrow_mut().insert(name.clone(), val);
-                            }
-                            _ => return Err("cannot set property on non-map type.".into()),
-                        }
+                        let prop = self.resolve_property(target)?;
+                        prop.set(name.clone(), val);
                     }
                     _ => return Err("invalid assignment target".into()),
                 }
@@ -531,18 +594,18 @@ impl Interpreter {
                         target: obj_target,
                         name,
                     } => {
-                        let (map, key) = self.resolve_map_property(obj_target, name)?;
-                        let current = match map.borrow().get(&key) {
-                            Some(val) => val.clone(),
+                        let prop = self.resolve_property(obj_target)?;
+                        let current = match prop.get(name) {
+                            Some(val) => val,
                             None => {
                                 return Err(format!(
                                     "property '{}' does not exist on this object.",
-                                    key
+                                    name
                                 ));
                             }
                         };
                         let new_val = Self::apply_comp_op(current, op, rhs)?;
-                        map.borrow_mut().insert(key, new_val);
+                        prop.set(name.clone(), new_val);
                     }
                     _ => return Err("invalid assignment target".into()),
                 }
@@ -720,7 +783,52 @@ impl Interpreter {
                 Ok(Signal::None)
             }
 
-            _ => todo!(),
+            StmtKind::ClassDecl {
+                name,
+                methods,
+                superclass,
+            } => {
+                let superclass = match superclass {
+                    Some(supername) => {
+                        let val = self.env.borrow().get(supername.clone())?;
+                        match val {
+                            Value::Class(c) => Some(c),
+                            _ => return Err(format!("superclass '{supername}' is not a class.")),
+                        }
+                    }
+                    None => None,
+                };
+
+                let method_env = if let Some(ref sc) = superclass {
+                    let mut env = Environment::new_enclosing(Some(Rc::clone(&self.env)));
+                    env.define("super".to_string(), Value::Class(Rc::clone(sc)));
+                    Rc::new(RefCell::new(env))
+                } else {
+                    Rc::clone(&self.env)
+                };
+
+                let mut method_map = IndexMap::new();
+                for method_stmt in methods {
+                    if let StmtKind::FunDecl { name, params, body } = &method_stmt.kind {
+                        method_map.insert(
+                            name.clone(),
+                            Rc::new(FunData::new(
+                                name.clone(),
+                                params.clone(),
+                                body.clone(),
+                                Rc::clone(&method_env),
+                            )),
+                        );
+                    }
+                }
+
+                let class = Rc::new(ClassData::new(name.clone(), method_map, superclass));
+
+                self.env
+                    .borrow_mut()
+                    .define(name.clone(), Value::Class(class));
+                Ok(Signal::None)
+            }
         }
     }
 
@@ -798,16 +906,59 @@ impl Interpreter {
         }
     }
 
-    fn resolve_map_property(
-        &self,
-        target: &Expr,
-        name: &str,
-    ) -> Result<(Rc<RefCell<IndexMap<String, Value>>>, String), String> {
+    fn resolve_property(&self, target: &Expr) -> Result<PropertyTarget, String> {
         let obj = self.eval_expr(target)?;
-
         match obj {
-            Value::Map(map) => Ok((map, name.to_string())),
-            _ => Err(format!("cannot access property on non-map type.")),
+            Value::Map(map) => Ok(PropertyTarget::Map(map)),
+            Value::Instance(inst) => Ok(PropertyTarget::Instance(inst)),
+            _ => Err("cannot access property on this type.".into()),
+        }
+    }
+}
+
+fn find_method(class: &Rc<ClassData>, name: &str) -> Option<Rc<FunData>> {
+    if let Some(m) = class.methods.get(name) {
+        return Some(Rc::clone(m));
+    }
+
+    match &class.superclass {
+        Some(sc) => find_method(sc, name),
+        None => None,
+    }
+}
+
+fn bind_method(fun: &Rc<FunData>, instance: Value) -> Value {
+    let mut env = Environment::new_enclosing(Some(Rc::clone(&fun.closure)));
+    env.define("self".to_string(), instance);
+    Value::Function(FunData::new(
+        fun.name.clone(),
+        fun.params.clone(),
+        fun.body.clone(),
+        Rc::new(RefCell::new(env)),
+    ))
+}
+
+enum PropertyTarget {
+    Map(Rc<RefCell<IndexMap<String, Value>>>),
+    Instance(Rc<InstanceData>),
+}
+
+impl PropertyTarget {
+    fn get(&self, key: &str) -> Option<Value> {
+        match self {
+            PropertyTarget::Map(map) => map.borrow().get(key).cloned(),
+            PropertyTarget::Instance(inst) => inst.fields.borrow().get(key).cloned(),
+        }
+    }
+
+    fn set(&self, key: String, val: Value) {
+        match self {
+            PropertyTarget::Map(map) => {
+                map.borrow_mut().insert(key, val);
+            }
+            PropertyTarget::Instance(inst) => {
+                inst.fields.borrow_mut().insert(key, val);
+            }
         }
     }
 }
