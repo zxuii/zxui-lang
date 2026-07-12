@@ -36,13 +36,13 @@ impl Parser {
         }
     }
 
-    fn peek(&self) -> Option<Token> {
-        if !self.is_at_end() {
-            Some(self.tokens[self.pos].clone())
-        } else {
-            None
-        }
-    }
+    // fn peek(&self) -> Option<Token> {
+    //     if !self.is_at_end() {
+    //         Some(self.tokens[self.pos].clone())
+    //     } else {
+    //         None
+    //     }
+    // }
 
     fn is_at_end(&self) -> bool {
         matches!(&self.ct, Some(tok) if tok.ty == TokenType::Eof)
