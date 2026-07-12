@@ -366,7 +366,6 @@ impl Interpreter {
                 if let Some(val) = prop.get(name) {
                     return Ok(val);
                 }
-
                 if let PropertyTarget::Instance(inst) = &prop {
                     if let Some(fun) = find_method(&inst.class, name) {
                         return Ok(bind_method(&fun, Value::Instance(Rc::clone(inst))));
@@ -566,7 +565,7 @@ impl Interpreter {
                     }
                     Expr::Get { target, name } => {
                         let prop = self.resolve_property(target)?;
-                        prop.set(name.clone(), val);
+                        prop.set(name.clone(), val)?;
                     }
                     _ => return Err("invalid assignment target".into()),
                 }
@@ -605,7 +604,7 @@ impl Interpreter {
                             }
                         };
                         let new_val = Self::apply_comp_op(current, op, rhs)?;
-                        prop.set(name.clone(), new_val);
+                        prop.set(name.clone(), new_val)?;
                     }
                     _ => return Err("invalid assignment target".into()),
                 }
@@ -692,7 +691,12 @@ impl Interpreter {
                 Ok(Signal::None)
             }
 
-            StmtKind::FunDecl { name, params, body } => {
+            StmtKind::FunDecl {
+                name,
+                params,
+                body,
+                is_static: _,
+            } => {
                 let fun = Value::Function(FunData::new(
                     name.clone(),
                     params.clone(),
@@ -732,7 +736,8 @@ impl Interpreter {
 
                     "root" => {
                         let module_rel = parts[1].replace(':', "/");
-                        let module_file = Path::new(&root.to_string()).join(format!("{}.zxui", module_rel));
+                        let module_file =
+                            Path::new(&root.to_string()).join(format!("{}.zxui", module_rel));
                         let module_path_str = module_file.to_string_lossy().to_string();
 
                         let code = fs::read_to_string(&module_file)
@@ -808,21 +813,37 @@ impl Interpreter {
                 };
 
                 let mut method_map = IndexMap::new();
+                let mut static_method_map = IndexMap::new();
+
                 for method_stmt in methods {
-                    if let StmtKind::FunDecl { name, params, body } = &method_stmt.kind {
-                        method_map.insert(
-                            name.clone(),
-                            Rc::new(FunData::new(
-                                name.clone(),
-                                params.clone(),
-                                body.clone(),
-                                Rc::clone(&method_env),
-                            )),
-                        );
+                    if let StmtKind::FunDecl {
+                        name: m_name,
+                        params,
+                        body,
+                        is_static,
+                    } = &method_stmt.kind
+                    {
+                        let fun_data = Rc::new(FunData::new(
+                            m_name.clone(),
+                            params.clone(),
+                            body.clone(),
+                            Rc::clone(&method_env),
+                        ));
+
+                        if *is_static {
+                            static_method_map.insert(m_name.clone(), fun_data);
+                        } else {
+                            method_map.insert(m_name.clone(), fun_data);
+                        }
                     }
                 }
 
-                let class = Rc::new(ClassData::new(name.clone(), method_map, superclass));
+                let class = Rc::new(ClassData::new(
+                    name.clone(),
+                    method_map,
+                    static_method_map,
+                    superclass,
+                ));
 
                 self.env
                     .borrow_mut()
@@ -911,6 +932,7 @@ impl Interpreter {
         match obj {
             Value::Map(map) => Ok(PropertyTarget::Map(map)),
             Value::Instance(inst) => Ok(PropertyTarget::Instance(inst)),
+            Value::Class(class) => Ok(PropertyTarget::Class(class)),
             _ => Err("cannot access property on this type.".into()),
         }
     }
@@ -923,6 +945,16 @@ fn find_method(class: &Rc<ClassData>, name: &str) -> Option<Rc<FunData>> {
 
     match &class.superclass {
         Some(sc) => find_method(sc, name),
+        None => None,
+    }
+}
+
+fn find_static_method(class: &Rc<ClassData>, name: &str) -> Option<Value> {
+    if let Some(m) = class.static_methods.get(name) {
+        return Some(Value::Function(m.as_ref().clone()));
+    }
+    match &class.superclass {
+        Some(sc) => find_static_method(sc, name),
         None => None,
     }
 }
@@ -941,6 +973,7 @@ fn bind_method(fun: &Rc<FunData>, instance: Value) -> Value {
 enum PropertyTarget {
     Map(Rc<RefCell<IndexMap<String, Value>>>),
     Instance(Rc<InstanceData>),
+    Class(Rc<ClassData>),
 }
 
 impl PropertyTarget {
@@ -948,17 +981,21 @@ impl PropertyTarget {
         match self {
             PropertyTarget::Map(map) => map.borrow().get(key).cloned(),
             PropertyTarget::Instance(inst) => inst.fields.borrow().get(key).cloned(),
+            PropertyTarget::Class(class) => find_static_method(class, key),
         }
     }
 
-    fn set(&self, key: String, val: Value) {
+    fn set(&self, key: String, val: Value) -> Result<(), String> {
         match self {
             PropertyTarget::Map(map) => {
                 map.borrow_mut().insert(key, val);
+                Ok(())
             }
             PropertyTarget::Instance(inst) => {
                 inst.fields.borrow_mut().insert(key, val);
+                Ok(())
             }
+            PropertyTarget::Class(_) => Err("cannot set property on a class.".into()),
         }
     }
 }

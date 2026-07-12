@@ -139,7 +139,11 @@ impl Parser {
 
     fn parse_stmt_kind(&mut self) -> Result<StmtKind, String> {
         match self.ct.as_ref().unwrap().ty.clone() {
-            TokenType::Fun => self.parse_fun_decl(),
+            TokenType::Fun => self.parse_fun_decl(false),
+            TokenType::Static => self.error(
+                Some("'static' keyword only allowed inside class body."),
+                None,
+            ),
             TokenType::Let => self.parse_var_decl(),
             TokenType::Lbrace => {
                 self.consume(TokenType::Lbrace)?;
@@ -245,7 +249,18 @@ impl Parser {
             let line = self.ct.as_ref().unwrap().line;
             match self.ct.as_ref().unwrap().ty {
                 TokenType::Fun => {
-                    let kind = self.parse_fun_decl()?;
+                    let kind = self.parse_fun_decl(false)?;
+                    methods.push(Stmt { kind, line });
+                }
+                TokenType::Static => {
+                    self.consume(TokenType::Static)?;
+                    if self.ct.as_ref().unwrap().ty != TokenType::Fun {
+                        return self.error(
+                            Some("'static' must be followed by a function declaration."),
+                            Some(vec![TokenType::Fun]),
+                        );
+                    }
+                    let kind = self.parse_fun_decl(true)?;
                     methods.push(Stmt { kind, line });
                 }
                 _ => {
@@ -262,7 +277,7 @@ impl Parser {
         Ok(methods)
     }
 
-    fn parse_fun_decl(&mut self) -> Result<StmtKind, String> {
+    fn parse_fun_decl(&mut self, is_static: bool) -> Result<StmtKind, String> {
         self.consume(TokenType::Fun)?;
         let name = self.parse_identifier()?;
         self.consume(TokenType::Identifier(name.clone()))?;
@@ -276,7 +291,12 @@ impl Parser {
         self.fun_counter -= 1;
         self.depth_counter -= 1;
         self.consume(TokenType::Rbrace)?;
-        Ok(StmtKind::FunDecl { name, params, body })
+        Ok(StmtKind::FunDecl {
+            name,
+            params,
+            body,
+            is_static,
+        })
     }
 
     fn parse_args(&mut self) -> Result<Vec<Expr>, String> {

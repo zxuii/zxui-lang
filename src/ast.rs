@@ -123,6 +123,7 @@ pub enum StmtKind {
         name: String,
         params: Vec<String>,
         body: Vec<Stmt>,
+        is_static: bool,
     },
     ClassDecl {
         name: String,

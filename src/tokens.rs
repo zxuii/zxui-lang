@@ -23,6 +23,7 @@ pub enum TokenType {
     Class,
     SelfTok,
     Super,
+    Static,
 
     // Symbols
     Plus,
@@ -122,8 +123,11 @@ impl std::fmt::Display for TokenType {
             TokenType::Super => {
                 write!(f, "super")
             }
+            TokenType::Static => {
+                write!(f, "static")
+            }
             TokenType::Colon => {
-                write!(f, "colon")
+                write!(f, ":")
             }
             TokenType::Plus => {
                 write!(f, "+")

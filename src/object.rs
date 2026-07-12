@@ -38,13 +38,14 @@ impl NativeData {
 pub struct ClassData {
     pub name: String,
     pub methods: IndexMap<String, Rc<FunData>>,
+    pub static_methods: IndexMap<String, Rc<FunData>>,
     pub superclass: Option<Rc<ClassData>>,
 }
 
 impl ClassData {
-    pub fn new(name: String, methods: IndexMap<String, Rc<FunData>>, superclass: Option<Rc<ClassData>>) -> Self {
+    pub fn new(name: String, methods: IndexMap<String, Rc<FunData>>, static_methods: IndexMap<String, Rc<FunData>>, superclass: Option<Rc<ClassData>>) -> Self {
         Self {
-            name, methods, superclass,
+            name, methods, static_methods, superclass,
         }
     }
 }

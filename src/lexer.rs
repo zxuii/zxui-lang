@@ -353,6 +353,7 @@ impl Lexer {
             "class" => TokenType::Class,
             "self" => TokenType::SelfTok,
             "super" => TokenType::Super,
+            "static" => TokenType::Static,
             _ => TokenType::Identifier(ident.clone()),
         };
         self.add_token(ty, start_line, start_col)
