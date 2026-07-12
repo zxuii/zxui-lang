@@ -35,14 +35,16 @@ fn run_file(path: &str) {
     match file {
         Ok(f) => match Lexer::new(path.to_string(), f.clone()).tokenize() {
             Ok(tokens) => match Parser::new(path.to_string(), f.clone(), tokens).parse() {
-                Ok(stmt) => match Interpreter::new(path.to_string(), f).exec_stmt(&stmt) {
+                Ok(stmt) => {
+                    println!("{:#?}", stmt);
+                    match Interpreter::new(path.to_string(), f).exec_stmt(&stmt) {
                     Ok(_) => {}
 
                     Err(e) => {
                         eprintln!("Runtime Error: {e}");
                         exit(1)
                     }
-                },
+                }},
                 Err(e) => {
                     eprintln!("Parse Error: {e}");
                     exit(1)

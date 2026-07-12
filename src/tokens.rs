@@ -20,6 +20,9 @@ pub enum TokenType {
     For,
     In,
     Import,
+    Class,
+    SelfTok,
+    Super,
 
     // Symbols
     Plus,
@@ -49,6 +52,7 @@ pub enum TokenType {
     And,    // and
     Or,     // or
     Dot,    // .
+    Colon,  // :
 
     // Specials
     Eof,
@@ -108,6 +112,18 @@ impl std::fmt::Display for TokenType {
             }
             TokenType::Import => {
                 write!(f, "import")
+            }
+            TokenType::Class => {
+                write!(f, "class")
+            }
+            TokenType::SelfTok => {
+                write!(f, "self")
+            }
+            TokenType::Super => {
+                write!(f, "super")
+            }
+            TokenType::Colon => {
+                write!(f, "colon")
             }
             TokenType::Plus => {
                 write!(f, "+")

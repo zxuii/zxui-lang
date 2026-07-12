@@ -39,6 +39,8 @@ pub enum Expr {
         target: Box<Expr>,
         name: String,
     },
+    SelfExpr,
+    Super { method: String },
     NoOp,
 }
 
@@ -121,6 +123,11 @@ pub enum StmtKind {
         name: String,
         params: Vec<String>,
         body: Vec<Stmt>,
+    },
+    ClassDecl {
+        name: String,
+        methods: Vec<Stmt>, // fun decl
+        superclass: Option<String>, // class decl
     },
     Break,
     Continue,

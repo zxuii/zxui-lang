@@ -410,6 +410,8 @@ impl Interpreter {
                     None => Err(format!("property '{}' does not exist on this object.", key)),
                 }
             }
+
+            _ => todo!()
         }
     }
 
@@ -722,6 +724,8 @@ impl Interpreter {
 
                 Ok(Signal::None)
             }
+
+            _ => todo!()
         }
     }
 

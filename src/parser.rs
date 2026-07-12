@@ -36,13 +36,13 @@ impl Parser {
         }
     }
 
-    // fn peek(&self) -> Option<Token> {
-    //     if !self.is_at_end() {
-    //         Some(self.tokens[self.pos].clone())
-    //     } else {
-    //         None
-    //     }
-    // }
+    fn peek(&self) -> Option<Token> {
+        if !self.is_at_end() {
+            Some(self.tokens[self.pos].clone())
+        } else {
+            None
+        }
+    }
 
     fn is_at_end(&self) -> bool {
         matches!(&self.ct, Some(tok) if tok.ty == TokenType::Eof)
@@ -149,7 +149,7 @@ impl Parser {
                 self.consume(TokenType::Rbrace)?;
                 Ok(StmtKind::Block(stmts))
             }
-            TokenType::Identifier(_) => {
+            TokenType::Identifier(_) | TokenType::SelfTok => {
                 let expr = self.parse_factor()?;
                 if matches!(
                     self.ct.as_ref().unwrap().ty,
@@ -164,6 +164,7 @@ impl Parser {
                     Ok(StmtKind::ExprStmt(expr))
                 }
             }
+            TokenType::Class => self.parse_class_decl(),
             TokenType::Return => {
                 if self.fun_counter > 0 {
                     self.parse_return()
@@ -202,12 +203,68 @@ impl Parser {
         }
     }
 
-    fn parse_fun_decl(&mut self) -> Result<StmtKind, String> {
-        self.consume(TokenType::Fun)?;
+    fn parse_identifier(&mut self) -> Result<String, String> {
         let name = match &self.ct.as_ref().unwrap().ty {
             TokenType::Identifier(n) => n.clone(),
             _ => return self.error(None, Some(vec![TokenType::Identifier(String::new())])),
         };
+        Ok(name)
+    }
+
+    fn parse_class_decl(&mut self) -> Result<StmtKind, String> {
+        self.consume(TokenType::Class)?;
+        let name = self.parse_identifier()?;
+        self.consume(TokenType::Identifier(name.clone()))?;
+        let mut superclass = None;
+        if self.ct.as_ref().unwrap().ty == TokenType::Colon {
+            self.consume(TokenType::Colon)?;
+            superclass = Some(self.parse_identifier()?);
+            self.consume(TokenType::Identifier(superclass.clone().unwrap()))?;
+        }
+        self.consume(TokenType::Lbrace)?;
+        self.depth_counter += 1;
+
+        let methods = self.parse_class_block()?;
+
+        self.depth_counter -= 1;
+        self.consume(TokenType::Rbrace)?;
+
+        Ok(StmtKind::ClassDecl {
+            name,
+            methods,
+            superclass,
+        })
+    }
+
+    fn parse_class_block(&mut self) -> Result<Vec<Stmt>, String> {
+        let mut methods = vec![];
+        while !matches!(
+            self.ct.as_ref().unwrap().ty,
+            TokenType::Eof | TokenType::Rbrace
+        ) {
+            let line = self.ct.as_ref().unwrap().line;
+            match self.ct.as_ref().unwrap().ty {
+                TokenType::Fun => {
+                    let kind = self.parse_fun_decl()?;
+                    methods.push(Stmt { kind, line });
+                }
+                _ => {
+                    return self.error(
+                        Some("only method declarations are allowed inside a class body."),
+                        Some(vec![TokenType::Fun]),
+                    );
+                }
+            }
+            if self.ct.as_ref().unwrap().ty == TokenType::Semicolon {
+                self.consume(TokenType::Semicolon)?;
+            }
+        }
+        Ok(methods)
+    }
+
+    fn parse_fun_decl(&mut self) -> Result<StmtKind, String> {
+        self.consume(TokenType::Fun)?;
+        let name = self.parse_identifier()?;
         self.consume(TokenType::Identifier(name.clone()))?;
         self.consume(TokenType::Lparen)?;
         let params = self.parse_params()?;
@@ -282,9 +339,16 @@ impl Parser {
 
     fn parse_params(&mut self) -> Result<Vec<String>, String> {
         let mut params = vec![];
-        if let TokenType::Identifier(n) = &self.ct.as_ref().unwrap().ty {
-            params.push(n.clone());
-            self.advance();
+        match &self.ct.as_ref().unwrap().ty {
+            TokenType::Identifier(n) => {
+                params.push(n.clone());
+                self.advance();
+            }
+            TokenType::SelfTok => {
+                params.push("self".to_string());
+                self.advance();
+            }
+            _ => {}
         }
         while self.ct.as_ref().unwrap().ty == TokenType::Comma {
             self.consume(TokenType::Comma)?;
@@ -688,6 +752,17 @@ impl Parser {
                 let node = Expr::Map(self.parse_map_literal()?);
                 self.consume(TokenType::Rbrace)?;
                 Ok(node)
+            }
+            TokenType::SelfTok => {
+                self.consume(TokenType::SelfTok)?;
+                Ok(Expr::SelfExpr)
+            }
+            TokenType::Super => {
+                self.consume(TokenType::Super)?;
+                self.consume(TokenType::Dot)?;
+                let method = self.parse_identifier()?;
+                self.consume(TokenType::Identifier(method.clone()))?;
+                Ok(Expr::Super { method })
             }
             TokenType::Identifier(name) => {
                 self.consume(TokenType::Identifier(name.clone()))?;

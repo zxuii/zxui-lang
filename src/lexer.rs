@@ -138,6 +138,7 @@ impl Lexer {
             ']' => self.add_token_advance(TokenType::Rbracket),
             ',' => self.add_token_advance(TokenType::Comma),
             '.' => self.add_token_advance(TokenType::Dot),
+            ':' => self.add_token_advance(TokenType::Colon),
             '=' => {
                 if self.peek() == Some('=') {
                     self.add_token(TokenType::EqEq, self.line, self.col);
@@ -349,6 +350,9 @@ impl Lexer {
             "for" => TokenType::For,
             "in" => TokenType::In,
             "import" => TokenType::Import,
+            "class" => TokenType::Class,
+            "self" => TokenType::SelfTok,
+            "super" => TokenType::Super,
             _ => TokenType::Identifier(ident.clone()),
         };
         self.add_token(ty, start_line, start_col)
