@@ -462,19 +462,10 @@ pub fn native_typeof(args: Vec<Value>) -> Result<Value, String> {
         Value::Array(_) => Ok(Value::String("array".to_string())),
         Value::Map(_) => Ok(Value::String("map".to_string())),
         Value::Number(_) => Ok(Value::String("number".to_string())),
-        Value::Function {
-            name: _,
-            body: _,
-            closure: _,
-            params: _,
-        } => Ok(Value::String("fun".to_string())),
+        Value::Function(_) => Ok(Value::String("fun".to_string())),
         Value::Boolean(_) => Ok(Value::String("boolean".to_string())),
         Value::Null => Ok(Value::String("null".to_string())),
-        Value::NativeFunction {
-            name: _,
-            arity: _,
-            fun: _,
-        } => Ok(Value::String("native fun".to_string())),
+        Value::NativeFunction(_) => Ok(Value::String("native fun".to_string())),
     }
 }
 

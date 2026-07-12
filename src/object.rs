@@ -4,6 +4,37 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{ast::Stmt, environment::Environment};
 
 #[derive(Clone)]
+pub struct FunData {
+    pub name: String,
+    pub params: Vec<String>,
+    pub body: Vec<Stmt>,
+    pub closure: Rc<RefCell<Environment>>,
+}
+
+impl FunData {
+    pub fn new(name: String, params: Vec<String>, body: Vec<Stmt>, closure: Rc<RefCell<Environment>>) -> Self {
+        Self {
+            name, params, body, closure,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct NativeData {
+    pub name: String,
+    pub arity: i32,
+    pub fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>,
+}
+
+impl NativeData {
+    pub fn new(name: String, arity: i32, fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>) -> Self {
+        Self {
+            name, arity, fun
+        }
+    }
+}
+
+#[derive(Clone)]
 pub enum Value {
     Null,
     Number(f64),
@@ -11,17 +42,8 @@ pub enum Value {
     String(String),
     Array(Rc<RefCell<Vec<Value>>>),
     Map(Rc<RefCell<IndexMap<String, Value>>>),
-    Function {
-        name: String,
-        params: Vec<String>,
-        body: Vec<Stmt>,
-        closure: Rc<RefCell<Environment>>,
-    },
-    NativeFunction {
-        name: String,
-        arity: i32,
-        fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>,
-    },
+    Function(FunData),
+    NativeFunction(NativeData),
 }
 
 impl Value {
@@ -30,7 +52,7 @@ impl Value {
         arity: i32,
         fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>,
     ) -> Self {
-        Self::NativeFunction { name, arity, fun }
+        Self::NativeFunction(NativeData::new(name, arity, fun))
     }
 
     fn fmt(&self, f: &mut std::fmt::Formatter, indent: usize) -> std::fmt::Result {
@@ -82,8 +104,8 @@ impl Value {
                 }
                 write!(f, "{}}}", spaces)
             }
-            Value::Function { name, .. } => write!(f, "[fun {name}]"),
-            Value::NativeFunction { name, .. } => write!(f, "[native fun {name}]"),
+            Value::Function(fun) => write!(f, "[fun {}]", fun.name),
+            Value::NativeFunction(fun) => write!(f, "[native fun {}]", fun.name),
         }
     }
 }

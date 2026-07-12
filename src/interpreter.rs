@@ -4,7 +4,7 @@ use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, StmtKind, UnaryOp};
 use crate::builtins::{self, *};
 use crate::environment::Environment;
 use crate::lexer::Lexer;
-use crate::object::Value;
+use crate::object::{FunData, Value};
 use crate::parser::Parser;
 
 use std::cell::RefCell;
@@ -296,12 +296,7 @@ impl Interpreter {
                 let evaluated_args = evaluated_args?;
 
                 match fun {
-                    Value::Function {
-                        name,
-                        params,
-                        body,
-                        closure,
-                    } => {
+                    Value::Function(f) => {
                         if self.call_stack.borrow().len() >= MAX_DEPTH {
                             let trace = self.build_stack_trace();
                             return Err(self.format_error(
@@ -312,11 +307,11 @@ impl Interpreter {
                             ));
                         }
 
-                        if evaluated_args.len() != params.len() {
+                        if evaluated_args.len() != f.params.len() {
                             return Err(self.format_error(
                                 &format!(
                                     "function <closure> expects {} args but got {}",
-                                    params.len(),
+                                    f.params.len(),
                                     evaluated_args.len()
                                 ),
                                 *line,
@@ -324,15 +319,15 @@ impl Interpreter {
                         }
 
                         let call_env = Rc::new(RefCell::new(Environment::new_enclosing(Some(
-                            Rc::clone(&closure),
+                            Rc::clone(&f.closure),
                         ))));
-                        for (param, arg) in params.iter().zip(evaluated_args) {
+                        for (param, arg) in f.params.iter().zip(evaluated_args) {
                             call_env.borrow_mut().define(param.clone(), arg);
                         }
 
                         self.call_stack
                             .borrow_mut()
-                            .push(CallFrame::new(name.clone(), *line));
+                            .push(CallFrame::new(f.name.clone(), *line));
 
                         let mut interp = Interpreter::new_env(
                             call_env,
@@ -343,7 +338,7 @@ impl Interpreter {
                         );
                         let mut return_val = Value::Null;
                         let mut error = None;
-                        for stmt in &body {
+                        for stmt in &f.body {
                             match interp.exec_stmt(stmt) {
                                 Ok(Signal::Return(val)) => {
                                     return_val = val.unwrap_or(Value::Null);
@@ -379,19 +374,19 @@ impl Interpreter {
                         }
                     }
 
-                    Value::NativeFunction { fun, arity, name } => {
-                        if arity != -1 && evaluated_args.len() != arity as usize {
+                    Value::NativeFunction(f) => {
+                        if f.arity != -1 && evaluated_args.len() != f.arity as usize {
                             return Err(self.format_error(
                                 &format!(
                                     "function {}() expects {} args but got {}",
-                                    name,
-                                    arity,
+                                    f.name,
+                                    f.arity,
                                     evaluated_args.len()
                                 ),
                                 *line,
                             ));
                         }
-                        fun(evaluated_args)
+                        (f.fun)(evaluated_args)
                     }
 
                     _ => Err(self.format_error("attempted to call a non-function value", *line)),
@@ -411,7 +406,7 @@ impl Interpreter {
                 }
             }
 
-            _ => todo!()
+            _ => todo!(),
         }
     }
 
@@ -635,12 +630,12 @@ impl Interpreter {
             }
 
             StmtKind::FunDecl { name, params, body } => {
-                let fun = Value::Function {
-                    name: name.clone(),
-                    params: params.clone(),
-                    body: body.clone(),
-                    closure: Rc::clone(&self.env),
-                };
+                let fun = Value::Function(FunData::new(
+                    name.clone(),
+                    params.clone(),
+                    body.clone(),
+                    Rc::clone(&self.env),
+                ));
                 self.env.borrow_mut().define(name.clone(), fun);
                 Ok(Signal::None)
             }
@@ -725,7 +720,7 @@ impl Interpreter {
                 Ok(Signal::None)
             }
 
-            _ => todo!()
+            _ => todo!(),
         }
     }
 
