@@ -345,6 +345,77 @@ Hasil math.square(5): 25
 
 INGAT! command `run` mengekspektasikan di direktori saat ini ATAU direktori yang ditentukan memiliki file `root.zxui` kalau tidak ada maka tidak bisa dipakai. dan wajib berisi variable project dengan map `name` dan `main`.
 
+## OOP / Class
+
+DI bahasa pemrograman Zxui sekarang sudah bisa melakukan OOP-things seperti membuat constructor, dan lain sebagainya (aku ga terlalu paham OOP karena ga biasa tentang begituan, seringnya sih make C dan Rust jadi ya... OOP ini ala kadarnya).
+
+Oke, lanjut ke penjelasannya saja.
+
+Di Zxui, kita butuh `fun init()` sebagai sebuah constructor. Kamu tidak butuh lagi sebuah `self` di parameter pertama fungsi ini karena sudah di 'inject' otomatis ke dalam setiap fungsi didalam class atau bisa dibilang `instance method`.
+
+Contoh:
+
+```swift
+class Person {
+    fun init(nama, kelas) {
+        self.nama = nama
+        self.kelas = kelas
+    }
+
+    fun greet() {
+        // Halo, Hafidh! Kamu kelas 10 PPLG-1
+        println("Halo, ", self.nama, "! ", "Kamu kelas ", self.kelas, "!")
+    }
+
+    static fun default() {
+        return Person("Hafidh", "10 PPLG-1")
+    }
+}
+```
+
+Seperti contoh diatas, kamu tak butuh `self` sebagai parameter pertama sudah bisa langsung menggunakan `self`. Kamu juga bisa langsung membuat sebuah `instance method` dengan membuat sebuah fungsi seperti biasanya saja, tentunya tak perlu `self` sebagai parameter.
+
+Kalau kamu ingin membuat sebuah `static method`, kamu butuh keyword tambahan bernama `static` untuk membuatnya. Contohnya seperti method `default()` diatas.
+
+Untuk pemanggilan, cukup:
+
+```swift
+Person("John", "10 PPLG-1")
+```
+
+Sederhana bukan? yap tentunya.
+
+Nah selanjutnya, ada yang namanya `inheritance`. di Zxui, saat ini hanya mengizinkan satu `inherit` per-class.
+
+Contoh:
+
+```swift
+class Animal {
+    fun init() {
+        self.type = "Dog";
+        self.say = "Woof!";
+    }
+
+    fun speak() {
+        println("The ", self.type, " say ", self.say);
+    }
+}
+
+class Cat : Animal {
+    fun init() {
+        self.type  = "Cat";
+        self.say = "Meow!";
+    }
+}
+
+let a = Animal()
+a.speak() // The Dog say Woof!
+let c = Cat()
+c.speak() // The Cat say Meow!
+```
+
+Ya... sesederhana itu. kamu bisa memanggil `super.method()` juga.
+
 ## Builtin modules dan Builtin functions
 
 di Zxui, ada builtin module bernama `raylib`, walau masih belum lengkap bindingnya, tapi sudah bisa membuat game topdown sederhana. dan APInya kurang lebih sama persis seperti raylib tapi beda di penamaannya aja. untuk sekarang, API/fungsi yang tersedia ada di contoh kode ini:
