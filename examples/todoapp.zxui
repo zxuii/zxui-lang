@@ -1,96 +1,121 @@
-let todos = [];
+class Todo {
+    fun init(nama) {
+        self.nama = nama;
+        self.selesai = false;
+    }
 
-let running = true;
+    fun toggle() {
+        if self.selesai {
+            self.selesai = false;
+        } else {
+            self.selesai = true;
+        }
+    }
 
-fun tampilMenu() {
-    println("===================="   );
-    println("      TODO APP      "   );
-    println("===================="   );
-    println("1. Lihat todos"         );
-    println("2. Tambah todo"         );
-    println("3. Hapus todo"          );
-    println("4. Tandai selesai/belum");
-    println("5. Keluar"              );
-    println("===================="   );
+    fun tampilkan(nomor) {
+        let tanda = "[ ]";
+        if self.selesai {
+            tanda = "[x]";
+        }
+        println(nomor, ". ", tanda, " ", self.nama);
+    }
 }
 
-fun tampilTodos() {
-    if len(todos) == 0 {
-        println("Belum ada todo!");
-    } else {
-        for todo in todos {
-            let tanda = "[ ]"
-            if todo.selesai {
-                tanda = "[x]"
+class TodoApp {
+    fun init() {
+        self.todos = [];
+        self.running = true;
+    }
+
+    fun tampilMenu() {
+        println("====================");
+        println("      TODO APP      ");
+        println("====================");
+        println("1. Lihat todos");
+        println("2. Tambah todo");
+        println("3. Hapus todo");
+        println("4. Tandai selesai/belum");
+        println("5. Keluar");
+        println("====================");
+    }
+
+    fun tampilTodos() {
+        if len(self.todos) == 0 {
+            println("Belum ada todo!");
+        } else {
+            let i = 0;
+            for todo in self.todos {
+                i += 1;
+                todo.tampilkan(i);
             }
-            println(todo.nama + " ", tanda)
         }
     }
-}
 
-fun tambahTodo() {
-    let input = readline("Masukan todo: ");
-    push(todos, { nama = input, selesai = false})
-    println("Todo berhasil ditambahkan!");
-}
-
-fun cekNomor(idx) {
-    return idx < 0 or idx >= len(todos)
-}
-
-fun hapusTodo() {
-    if len(todos) == 0 {
-        println("Belum ada todo yang bisa dihapus!");
-    } else {
-        tampilTodos();
-        let input = readline("Hapus nomor berapa? ");
-        let idx = number(input) - 1;
-        if cekNomor(idx) {
-            println("Nomor tidak valid!");
-        } else {
-            remove(todos, idx);
-            println("Todo berhasil dihapus!");
-        }
+    fun cekNomor(idx) {
+        return idx < 0 or idx >= len(self.todos);
     }
-}
 
-fun toggleTodo() {
-    if len(todos) == 0 {
-        println("Belum ada todo!");
-    } else {
-        tampilTodos();
-        let input = readline("Tandai nomor berapa? ");
-        let idx = number(input) - 1;
-        if cekNomor(idx) {
-            println("Nomor tidak valid!");
+    fun tambahTodo() {
+        let input = readline("Masukan todo: ");
+        push(self.todos, Todo(input));
+        println("Todo berhasil ditambahkan!");
+    }
+
+    fun hapusTodo() {
+        if len(self.todos) == 0 {
+            println("Belum ada todo yang bisa dihapus!");
         } else {
-            let todo = todos[idx];
-            if todo.selesai {
-                todo.selesai = false;
+            self.tampilTodos();
+            let input = readline("Hapus nomor berapa? ");
+            let idx = number(input) - 1;
+            if self.cekNomor(idx) {
+                println("Nomor tidak valid!");
             } else {
-                todo.selesai = true;
+                remove(self.todos, idx);
+                println("Todo berhasil dihapus!");
             }
-            println("Status todo berhasil diubah!");
+        }
+    }
+
+    fun toggleTodo() {
+        if len(self.todos) == 0 {
+            println("Belum ada todo!");
+        } else {
+            self.tampilTodos();
+            let input = readline("Tandai nomor berapa? ");
+            let idx = number(input) - 1;
+            if self.cekNomor(idx) {
+                println("Nomor tidak valid!");
+            } else {
+                let todo = self.todos[idx];
+                todo.toggle();
+                println("Status todo berhasil diubah!");
+            }
+        }
+    }
+
+    fun run() {
+        while self.running {
+            self.tampilMenu();
+            let pilihan = readline("Pilih menu: ");
+
+            if pilihan == "1" {
+                self.tampilTodos();
+            } else if pilihan == "2" {
+                self.tambahTodo();
+            } else if pilihan == "3" {
+                self.hapusTodo();
+            } else if pilihan == "4" {
+                self.toggleTodo();
+            } else if pilihan == "5" {
+                println("Sampai jumpa!");
+                self.running = false;
+            } else {
+                println("Pilihan tidak valid!");
+            }
         }
     }
 }
 
-while running {
-    tampilMenu();
-    let pilihan = readline("Pilih menu: ");
-
-    if pilihan == "1" {
-        tampilTodos();
-    } else if pilihan == "2" {
-        tambahTodo();
-    } else if pilihan == "3" {
-        hapusTodo();
-    } else if pilihan == "4" {
-        toggleTodo();
-    } else if pilihan == "5" {
-        println("Sampai jumpa!");
-        running = false;
-    } else {
-        println("Pilihan tidak valid!");
-    }
-}
+let app = TodoApp();
+app.run();
