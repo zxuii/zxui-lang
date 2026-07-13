@@ -51,18 +51,10 @@ Sederhana, tentunya.
 
 Sebenarnya ini bisa dilakukan di multiplatform. tapi mungkin belum bisa pakai raylib things dulu karena belum gw buat agar bisa di seluruh device, tapi harusnya bahasanya masih bisa dipake di segala device yang ada rust compiler.
 
-```bash
-cargo build --release
+```ps1
+.\build.bat
 ```
-
-tunggu beberapa saat dan kamu akan mendapatkan binaries di `target/release/zxui` bisa kamu jalankan langsung dari sana atau copy ke mana gitu terserah.
-
-kalau gamau ribet tinggal:
-
-```bash
-cargo r -r [..args]
-```
-ini otomatis build dan run executable.
+Itu saja. dan kamu langsung bisa melihat `zxui.exe` di root project.
 
 Install rust bagi yang belum punya: [Install rust disini](https://rust-lang.org/tools/install/)
 
