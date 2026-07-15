@@ -707,16 +707,6 @@ impl Interpreter {
                 Ok(Signal::None)
             }
             StmtKind::Import(path) => {
-                let root = match &self.root_dir {
-                    Some(r) => r.clone(),
-                    None => {
-                        return Err(
-                            "cannot use 'import' in single-file mode. use 'zxui run' instead."
-                                .into(),
-                        );
-                    }
-                };
-
                 // ngeparse antara "root:src/math" atau "root:math" misalnya
                 let parts: Vec<&str> = path.splitn(2, ':').collect();
                 if parts.len() != 2 {
@@ -735,6 +725,15 @@ impl Interpreter {
                     }
 
                     "root" => {
+                        let root = match &self.root_dir {
+                            Some(r) => r.clone(),
+                            None => {
+                                return Err(
+                            "cannot 'import' using 'root' schema without root.zxui, please run `zxui init`."
+                                .into(),
+                        );
+                            }
+                        };
                         let module_rel = parts[1].replace(':', "/");
                         let module_file =
                             Path::new(&root.to_string()).join(format!("{}.zxui", module_rel));
