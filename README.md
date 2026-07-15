@@ -73,8 +73,9 @@ block       ::= stmt*
 
 stmt        ::= fun_decl
               | var_decl
+              | class_decl
               | "{" block "}"
-              | identifier (assign_op expr | factor_tail*)
+              | (identifier | "self") factor_tail* (assign_op expr)?
               | return_stmt
               | import_stmt
               | if_stmt
@@ -85,15 +86,18 @@ stmt        ::= fun_decl
               | expr
 
 fun_decl    ::= "fun" identifier "(" params ")" "{" block "}"
+class_decl  ::= "class" identifier [":" identifier] "{" class_block "}"
+class_block ::= (fun_decl | "static" fun_decl)*
+
 var_decl    ::= "let" identifier "=" expr
 var_assign  ::= expr ("=" | "+=" | "-=" | "*=" | "/=") expr
-return_stmt ::= "return" [expr]
-import_stmt ::= "import" string
+return_stmt ::= "return" [expr]              (* only valid inside fun_decl body *)
+import_stmt ::= "import" string              (* only valid at top-level (depth 0) *)
 if_stmt     ::= "if" expr "{" block "}" ["else" ("{" block "}" | if_stmt)]
 while_stmt  ::= "while" expr "{" block "}"
 for_stmt    ::= "for" identifier "in" expr "{" block "}"
 
-params      ::= [identifier ("," identifier)*]
+params      ::= [("self" | identifier) ("," identifier)*]
 args        ::= [expr ("," expr)*]
 
 expr        ::= logical_and ("or" logical_and)*
@@ -117,6 +121,8 @@ primary     ::= number
               | "(" expr ")"
               | "[" array_literal "]"
               | "{" map_literal "}"
+              | "self"
+              | "super" "." identifier
               | identifier
 
 array_literal ::= [expr ("," expr)*]
