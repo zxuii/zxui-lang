@@ -1,4 +1,4 @@
-import "builtin:raylib"
+import "root:raylib"
 
 let width = 800
 let height = 600
