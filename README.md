@@ -632,14 +632,8 @@ Niatnya aku mau mempublikasikan proses pembuatan bahasa pemrograman ini di youtu
 Pengenalan: ini adalah section khusus yang akan terus berubah seiring berjalannya waktu, disini akan menceritakan apa aja yang aku lakukan dan apa yang aku ingin lakukan.
 
 Aku ingin membuat sistem FFI di bahasa pemrograman ini secara langsung, jadi aku tak perlu lagi menyentuh builtins.rs untuk melakukan FFI terhadap raylib dkk.
-Sebenarnya aku bimbang untuk membuat diantara ketiga ini:
-- FFI
-- CLASS
-- BYTECODE
 
-Jadi aku langsung aja melakukan sebuah GAMBLE:
-
-dan didapatkan hasilnya Bytecode.... okelah. aku akan buat compiler + vm.
+ONGOING: FFI
 
 ## Penutup
 
