@@ -300,9 +300,9 @@ while true {
 
 Nah di bahasa pemrograman Zxui, import statement ini memang harus di jelaskan sih behaviornya. seperti ini sederhananya:
 
-di Zxui, kamu WAJIB untuk membuat `project` dulu dibanding pakai single-file untuk menggunakan import statement. Kenapa? Agar lokasi importnya jelas. yaitu berdasarkan lokasi `root.zxui` berada.
+di Zxui, kamu WAJIB untuk membuat `project` dulu dibanding pakai single-file untuk melakukan import file dari schema `root`. Kenapa? Agar lokasi importnya jelas. yaitu berdasarkan lokasi `root.zxui` berada.
 
-Jadi, alasan kenapa harus pakai prefix schema `root:` di import string, alasannya karena itu.
+Tapi, kalau import selain `root` misalnya seperti `builtin` itu diperbolehkan di single-file mode.
 
 Contoh di project `example`:
 
