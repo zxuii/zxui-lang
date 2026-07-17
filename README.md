@@ -2,7 +2,25 @@
 
 ## Pendahuluan
 
-Zxui adalah interpreter berbasis AST tree-walk yang cukup lambat tapi mudah untuk diimplementasikan dibanding stack-based/register-based vm. Untuk feature, Zxui memang kalah, karena memang bukan dibuat untuk prod-use. Ini adalah proyek educational dan untuk konten di youtube saya.
+Zxui adalah interpreter berbasis Tree-Walk AST yang cukup lambat tapi mudah untuk diimplementasikan dibanding stack-based/register-based vm. Untuk feature, Zxui memang kalah, karena memang bukan dibuat untuk prod-use. Ini adalah proyek educational dan untuk konten di youtube saya.
+
+Kalau masih belum paham apa itu Tree-Walk AST atau lebih dikenal dengan AST Interpreter:
+
+> An abstract syntax tree interpreter transforms source code into an abstract syntax tree (AST), then interprets it directly, or uses it to generate native code via JIT compilation. In this approach, each sentence needs to be parsed just once.
+
+> As an advantage over bytecode, AST keeps the global program structure and relations between statements (which is lost in a bytecode representation), and when compressed provides a more compact representation. Thus, using AST has been proposed as a better intermediate format than bytecode.
+
+> However, for interpreters, AST results in more overhead than a bytecode interpreter, because of nodes related to syntax performing no useful work, of a less sequential representation (requiring traversal of more pointers) and of overhead visiting the tree.[11]
+
+Atau versi indonesia:
+
+> Interpreter Abstract Syntax Tree (AST) mengonversi source code menjadi struktur AST, lalu mengeksekusinya secara langsung (interpretasi langsung) atau menggunakannya untuk men-generate native code melalui kompilasi JIT. Dengan pendekatan ini, setiap statement hanya perlu di-parse satu kali saja. 
+
+> Sebagai kelebihan dibanding bytecode, AST tetap menjaga struktur program global dan hubungan antar statement (yang biasanya hilang dalam representasi bytecode). Selain itu, ketika dikompresi, AST memberikan representasi yang lebih ringkas (concise). Oleh karena itu, penggunaan AST sering diusulkan sebagai intermediate format yang lebih baik daripada bytecode.
+
+> Namun, untuk interpreter, AST memberikan beban tambahan (overhead) yang lebih besar dibandingkan interpreter bytecode. Hal ini disebabkan oleh adanya node terkait sintaksis yang sebenarnya tidak melakukan proses komputasi apa pun, representasi yang kurang sekuensial (sehingga membutuhkan lebih banyak pointer traversal), serta adanya overhead tambahan yang terjadi saat melakukan traversal pada tree tersebut.
+
+Sumber: [wikipedia.org](https://en.wikipedia.org/wiki/Interpreter_(computing))
 
 Walaupun bahasa ini sangatlah 'sempit' tapi kita sudah bisa membuat beberapa hal di bahasa ini lho~! 
 
