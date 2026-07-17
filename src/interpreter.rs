@@ -713,11 +713,23 @@ impl Interpreter {
                     return Err(format!("invalid import path '{}'.", path));
                 }
 
+                let root = match &self.root_dir {
+                    Some(r) => r.clone(),
+                    None => {
+                        return Err(
+                            "cannot use 'import' statement without a project, please run `zxui init`."
+                                .into(),
+                        );
+                    }
+                };
+
                 match parts[0] {
                     "builtin" => {
                         let map = match parts[1] {
                             "raylib" => builtins::module_raylib(),
-                            other => return Err(format!("unknown builtin module '{}'", other)),
+                            other => {
+                                return Err(format!("unknown builtin module named '{}'", other));
+                            }
                         };
                         self.env
                             .borrow_mut()
@@ -725,15 +737,6 @@ impl Interpreter {
                     }
 
                     "root" => {
-                        let root = match &self.root_dir {
-                            Some(r) => r.clone(),
-                            None => {
-                                return Err(
-                            "cannot 'import' using 'root' schema without root.zxui, please run `zxui init`."
-                                .into(),
-                        );
-                            }
-                        };
                         let module_rel = parts[1].replace(':', "/");
                         let module_file =
                             Path::new(&root.to_string()).join(format!("{}.zxui", module_rel));
@@ -781,8 +784,18 @@ impl Interpreter {
                             .define(var_name, Value::Map(Rc::new(RefCell::new(map))));
                     }
 
-                    "std" => {}
+                    // "std" => {
+                    //     let map = match parts[1] {
+                    //         "ffi" => {
 
+                    //         }
+                    //         other => return Err(format!("unknown standard library module named '{}'", other)),
+                    //     };
+
+                    //     self.env
+                    //         .borrow_mut()
+                    //         .define(parts[1].to_string(), Value::Map(Rc::new(RefCell::new(map))));
+                    // }
                     other => return Err(format!("unknown import scheme '{}'", other)),
                 }
 
