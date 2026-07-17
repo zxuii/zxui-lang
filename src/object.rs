@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use std::{cell::RefCell, rc::Rc};
+use std::{any::Any, cell::RefCell, rc::Rc};
 
 use crate::{ast::Stmt, environment::Environment};
 
@@ -35,17 +35,58 @@ impl NativeData {
 }
 
 #[derive(Clone)]
+pub enum MethodKind {
+    User(Rc<FunData>),
+    Native(Rc<NativeMethodData>),
+}
+
+pub struct NativeMethodData {
+    pub name: String,
+    pub arity: i32,
+    pub fun: Box<dyn Fn(Value, Vec<Value>) -> Result<Value, String>>,
+}
+
+#[derive(Clone)]
 pub struct ClassData {
     pub name: String,
-    pub methods: IndexMap<String, Rc<FunData>>,
-    pub static_methods: IndexMap<String, Rc<FunData>>,
+    pub methods: IndexMap<String, MethodKind>,
+    pub static_methods: IndexMap<String, MethodKind>,
     pub superclass: Option<Rc<ClassData>>,
+    pub native_get: Option<Rc<dyn Fn(&InstanceData, &str) -> Option<Value>>>,
+    pub native_set: Option<Rc<dyn Fn(&InstanceData, &str, Value) -> Result<(), String>>>,
 }
 
 impl ClassData {
-    pub fn new(name: String, methods: IndexMap<String, Rc<FunData>>, static_methods: IndexMap<String, Rc<FunData>>, superclass: Option<Rc<ClassData>>) -> Self {
+    pub fn new(
+        name: String,
+        methods: IndexMap<String, MethodKind>,
+        static_methods: IndexMap<String, MethodKind>,
+        superclass: Option<Rc<ClassData>>,
+    ) -> Self {
         Self {
-            name, methods, static_methods, superclass,
+            name,
+            methods,
+            static_methods,
+            superclass,
+            native_get: None,
+            native_set: None,
+        }
+    }
+
+    pub fn new_native(
+        name: String,
+        methods: IndexMap<String, MethodKind>,
+        static_methods: IndexMap<String, MethodKind>,
+        native_get: Option<Rc<dyn Fn(&InstanceData, &str) -> Option<Value>>>,
+        native_set: Option<Rc<dyn Fn(&InstanceData, &str, Value) -> Result<(), String>>>,
+    ) -> Self {
+        Self {
+            name,
+            methods,
+            static_methods,
+            superclass: None,
+            native_get,
+            native_set,
         }
     }
 }
@@ -53,6 +94,7 @@ impl ClassData {
 pub struct InstanceData {
     pub class: Rc<ClassData>,
     pub fields: RefCell<IndexMap<String, Value>>,
+    pub native: RefCell<Option<Rc<dyn Any>>>,
 }
 
 #[derive(Clone)]
