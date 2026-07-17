@@ -409,6 +409,12 @@ pub fn raylib_is_key_down(raylib: Rc<Raylib>) -> Value {
     )
 }
 
+// pub fn module_std() -> IndexMap<String, Value> {
+//     let mut map = IndexMap::new();
+
+//     map
+// }
+
 pub fn module_raylib() -> IndexMap<String, Value> {
     let ray = Rc::new(
         Raylib::new("./raylib/lib/raylib.dll".to_string()).expect("failed to load raylib.dll")

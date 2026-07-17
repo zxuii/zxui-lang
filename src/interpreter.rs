@@ -4,7 +4,7 @@ use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, StmtKind, UnaryOp};
 use crate::builtins::{self, *};
 use crate::environment::Environment;
 use crate::lexer::Lexer;
-use crate::object::{ClassData, FunData, InstanceData, Value};
+use crate::object::{ClassData, FunData, InstanceData, MethodKind, Value};
 use crate::parser::Parser;
 
 use std::cell::RefCell;
@@ -324,20 +324,26 @@ impl Interpreter {
                         let instance = Rc::new(InstanceData {
                             class: Rc::clone(&class),
                             fields: RefCell::new(IndexMap::new()),
+                            native: RefCell::new(None),
                         });
-
                         if let Some(init_fun) = find_method(&class, "init") {
                             let bound =
                                 bind_method(&init_fun, Value::Instance(Rc::clone(&instance)));
-                            if let Value::Function(f) = bound {
-                                self.call_user_function(
-                                    f.name,
-                                    f.params,
-                                    f.body,
-                                    f.closure,
-                                    evaluated_args,
-                                    *line,
-                                )?;
+                            match bound {
+                                Value::Function(f) => {
+                                    self.call_user_function(
+                                        f.name,
+                                        f.params,
+                                        f.body,
+                                        f.closure,
+                                        evaluated_args,
+                                        *line,
+                                    )?;
+                                }
+                                Value::NativeFunction(f) => {
+                                    (f.fun)(evaluated_args)?;
+                                }
+                                _ => unreachable!(),
                             }
                         } else if !evaluated_args.is_empty() {
                             return Err(self.format_error(
@@ -845,9 +851,9 @@ impl Interpreter {
                         ));
 
                         if *is_static {
-                            static_method_map.insert(m_name.clone(), fun_data);
+                            static_method_map.insert(m_name.clone(), MethodKind::User(fun_data));
                         } else {
-                            method_map.insert(m_name.clone(), fun_data);
+                            method_map.insert(m_name.clone(), MethodKind::User(fun_data));
                         }
                     }
                 }
@@ -952,20 +958,19 @@ impl Interpreter {
     }
 }
 
-fn find_method(class: &Rc<ClassData>, name: &str) -> Option<Rc<FunData>> {
+fn find_method(class: &Rc<ClassData>, name: &str) -> Option<MethodKind> {
     if let Some(m) = class.methods.get(name) {
-        return Some(Rc::clone(m));
+        return Some(m.clone());
     }
-
     match &class.superclass {
         Some(sc) => find_method(sc, name),
         None => None,
     }
 }
 
-fn find_static_method(class: &Rc<ClassData>, name: &str) -> Option<Value> {
+fn find_static_method(class: &Rc<ClassData>, name: &str) -> Option<MethodKind> {
     if let Some(m) = class.static_methods.get(name) {
-        return Some(Value::Function(m.as_ref().clone()));
+        return Some(m.clone());
     }
     match &class.superclass {
         Some(sc) => find_static_method(sc, name),
@@ -973,15 +978,41 @@ fn find_static_method(class: &Rc<ClassData>, name: &str) -> Option<Value> {
     }
 }
 
-fn bind_method(fun: &Rc<FunData>, instance: Value) -> Value {
-    let mut env = Environment::new_enclosing(Some(Rc::clone(&fun.closure)));
-    env.define("self".to_string(), instance);
-    Value::Function(FunData::new(
-        fun.name.clone(),
-        fun.params.clone(),
-        fun.body.clone(),
-        Rc::new(RefCell::new(env)),
-    ))
+fn bind_method(method: &MethodKind, instance: Value) -> Value {
+    match method {
+        MethodKind::User(fun) => {
+            let mut env = Environment::new_enclosing(Some(Rc::clone(&fun.closure)));
+            env.define("self".to_string(), instance);
+            Value::Function(FunData::new(
+                fun.name.clone(),
+                fun.params.clone(),
+                fun.body.clone(),
+                Rc::new(RefCell::new(env)),
+            ))
+        }
+        MethodKind::Native(native) => {
+            let native = Rc::clone(native);
+            Value::native_fun(
+                native.name.clone(),
+                native.arity,
+                Rc::new(move |args| (native.fun)(instance.clone(), args)),
+            )
+        }
+    }
+}
+
+fn bind_static(method: &MethodKind) -> Value {
+    match method {
+        MethodKind::User(fun) => Value::Function(fun.as_ref().clone()),
+        MethodKind::Native(native) => {
+            let native = Rc::clone(native);
+            Value::native_fun(
+                native.name.clone(),
+                native.arity,
+                Rc::new(move |args| (native.fun)(Value::Null, args)),
+            )
+        }
+    }
 }
 
 enum PropertyTarget {
@@ -994,8 +1025,15 @@ impl PropertyTarget {
     fn get(&self, key: &str) -> Option<Value> {
         match self {
             PropertyTarget::Map(map) => map.borrow().get(key).cloned(),
-            PropertyTarget::Instance(inst) => inst.fields.borrow().get(key).cloned(),
-            PropertyTarget::Class(class) => find_static_method(class, key),
+            PropertyTarget::Instance(inst) => {
+                if let Some(getter) = &inst.class.native_get {
+                    if let Some(val) = getter(inst, key) {
+                        return Some(val);
+                    }
+                }
+                inst.fields.borrow().get(key).cloned()
+            }
+            PropertyTarget::Class(class) => find_static_method(class, key).map(|m| bind_static(&m)),
         }
     }
 
@@ -1006,6 +1044,9 @@ impl PropertyTarget {
                 Ok(())
             }
             PropertyTarget::Instance(inst) => {
+                if let Some(setter) = &inst.class.native_set {
+                    return setter(inst, &key, val);
+                }
                 inst.fields.borrow_mut().insert(key, val);
                 Ok(())
             }
