@@ -781,6 +781,8 @@ impl Interpreter {
                             .define(var_name, Value::Map(Rc::new(RefCell::new(map))));
                     }
 
+                    "std" => {}
+
                     other => return Err(format!("unknown import scheme '{}'", other)),
                 }
 
