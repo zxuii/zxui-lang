@@ -318,9 +318,7 @@ while true {
 
 Nah di bahasa pemrograman Zxui, import statement ini memang harus di jelaskan sih behaviornya. seperti ini sederhananya:
 
-di Zxui, kamu WAJIB untuk membuat `project` dulu dibanding pakai single-file untuk melakukan import file dari schema `root`. Kenapa? Agar lokasi importnya jelas. yaitu berdasarkan lokasi `root.zxui` berada.
-
-Tapi, kalau import selain `root` misalnya seperti `builtin` itu diperbolehkan di single-file mode.
+di Zxui, kamu wajib membuat sebuah project apabila ingin menggunakan import statement. Ini karena memang by design, untuk tidak memusingkan user kalau relative by script location. Jadi jelas dia itu diambil dari mana.
 
 Contoh di project `example`:
 
@@ -432,57 +430,10 @@ c.speak() // The Cat say Meow!
 
 Ya... sesederhana itu. kamu bisa memanggil `super.method()` juga.
 
-## Builtin modules dan Builtin functions
+## Builtin functions
 
-di Zxui, ada builtin module bernama `raylib`, walau masih belum lengkap bindingnya, tapi sudah bisa membuat game topdown sederhana. dan APInya kurang lebih sama persis seperti raylib tapi beda di penamaannya aja. untuk sekarang, API/fungsi yang tersedia ada di contoh kode ini:
-
-```swift
-import "builtin:raylib"
-
-let width = 800
-let height = 600
-let speed = 400
-
-raylib.initWindow(width, height, "Top Down Zxui")
-
-let player = {
-    x = width / 2,
-    y = height / 2,
-    w = 50,
-    h = 50,
-}
-
-while !raylib.windowShouldClose() {
-    let dt = raylib.getFrameTime()
-
-    raylib.beginDrawing()
-
-    raylib.clearBackground("white")
-
-    if raylib.isKeyDown("w") {
-        player.y -= speed * dt
-    }
-    if raylib.isKeyDown("a") {
-        player.x -= speed * dt
-    }
-    if raylib.isKeyDown("s") {
-        player.y += speed * dt
-    }
-    if raylib.isKeyDown("d") {
-        player.x += speed * dt
-    }
-
-    raylib.drawRectangle(player.x, player.y, player.w, player.h, "red")
-
-    raylib.endDrawing()
-}
-
-raylib.closeWindow()
-```
-
-Untuk builtin module, pakai prefix schema builtin ya.
-
-untuk Builtin/Native functions ada:
+di Zxui, ada beberapa builtin functions yang tersedia di dalamnya. 
+Contoh Builtin functions yang ada:
 
 ```js
 println(...args)
@@ -504,6 +455,58 @@ values(x)
 hasKey(x)
 clear(x)
 ```
+
+## 'std' Module Schema
+
+Di Zxui, saat ini hanya ada satu module di schema `std` atau biasa disebut sebagai `Standard Library`, Yaitu `ffi`. `Standard Library` ini dapat langsung memanggil fungsi bahasa `C` dari Zxui. untuk contohnya sendiri seperti berikut:
+
+```swift
+import "std:ffi"
+
+let lib = ffi.load("./lib/raylib.dll")
+
+lib.struct("Color", { r = "u8", g = "u8", b = "u8", a = "u8" })
+// KAMU BISA LANGSUNG MENGGUNAKAN STRUCTNYA
+// SEBAGAI PARAMETER ATAU RETURN VALUE!
+lib.declare("ColorFromHSV", ["f32", "f32", "f32"], "Color") 
+lib.declare("InitWindow", ["i32", "i32", "str"], "void")
+
+// kalau mau memanggil fungsi hanya sesederhana:
+lib.InitWindow(800, 600, "Hello World!")
+// HANYA lib.namafungsi(...args)
+```
+> PENTING: urutan field di `lib.struct()` HARUS sama persis dengan urutan field di definisi struct C aslinya (cek header .h library tersebut). Alignment/padding dihitung otomatis mengikuti aturan C standar, tapi urutan yang salah akan menghasilkan data yang korup tanpa pesan error.
+
+> CATATAN: untuk `ffi.load`, itu path nya relatif terhadap `root.zxui`. Biar kamu tidak pusing-pusing lagi ya....
+
+Untuk daftar setiap tipe yang ada untuk ffi:
+
+|FFI|Equivalent C|
+----------|----------
+`"void"`  | `void`
+`"i8"`    | `char` 
+`"u8"`    | `unsigned char`
+`"i16"`   | `short` 
+`"u16"`   | `unsigned short` 
+`"i32"`   | `int` 
+`"u32"`   | `unsigned int` 
+`"i64"`   | `long`
+`"u64"`   | `unsigned long` 
+`"f32"`   | `float`
+`"f64"`   | `double`
+`"bool"`  | `_Bool`
+`"str"`   | `const char*`
+`"ptr"`   | `void*`
+
+Kalau ada tipe yang selain dari itu (atau struct), bisa langsung tulis nama structnya. TAPI kamu harus mendefinisikannya dulu ya!
+
+Dan omong-omong, struct kalau direpresentasikan di Zxui, itu adalah sebuah `Map`. Dan didalamnya memiliki sebuah `"reserved property"` bernama `__struct_name__`. Itu digunakan agar Zxui tahu apakah tipenya valid atau tidak. TETAPI kamu bisa membuat `"struct"` manual tanpa `.struct()` method:
+
+```swift
+let warna = { r = 255, g = 0, b = 0, a = 255 }
+```
+
+TAPI INGAT: kalau tanpa `__struct_name__`, maka Zxui akan menganggap struct itu sepenuhnya BENAR walau sebenarnya tidak. Yang mengakibatkan error message yang sangat tidak jelas nantinya. INGAT itu.
 
 ## CRUD Example
 
