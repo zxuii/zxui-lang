@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use crate::ast::{BinOp, CompOp, Expr, LogicalOp, Stmt, StmtKind, UnaryOp};
-use crate::builtins::{self, *};
+use crate::builtins::*;
 use crate::environment::Environment;
 use crate::lexer::Lexer;
 use crate::object::{ClassData, FunData, InstanceData, MethodKind, Value};
@@ -730,18 +730,6 @@ impl Interpreter {
                 };
 
                 match parts[0] {
-                    "builtin" => {
-                        let map = match parts[1] {
-                            "raylib" => builtins::module_raylib(),
-                            other => {
-                                return Err(format!("unknown builtin module named '{}'", other));
-                            }
-                        };
-                        self.env
-                            .borrow_mut()
-                            .define(parts[1].to_string(), Value::Map(Rc::new(RefCell::new(map))));
-                    }
-
                     "root" => {
                         let module_rel = parts[1].replace(':', "/");
                         let module_file =
