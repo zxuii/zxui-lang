@@ -33,7 +33,10 @@ impl Lexer {
             self.filename,
             self.line,
             self.col,
-            self.code_raw.lines().nth(self.line.saturating_sub(1)).unwrap_or("")
+            self.code_raw
+                .lines()
+                .nth(self.line.saturating_sub(1))
+                .unwrap_or("")
         );
         let mut cursor = String::from("    ");
         for _ in 0..self.col.saturating_sub(1) {
@@ -270,7 +273,9 @@ impl Lexer {
     }
 
     fn is_alpha(&self) -> bool {
-        self.ch >= Some('a') && self.ch <= Some('z') || self.ch >= Some('A') && self.ch <= Some('Z')
+        self.ch >= Some('a') && self.ch <= Some('z')
+            || self.ch >= Some('A') && self.ch <= Some('Z')
+            || self.ch == Some('_')
     }
 
     fn is_alnum(&self) -> bool {
