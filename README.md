@@ -702,6 +702,27 @@ let app = TodoApp();
 app.run();
 ```
 
+## ASPEK TEKNIS (lewati kalau males)
+
+Nah sebenarnya ada banyak sekali kompleksitas yang disembunyikan dari semua proses ini. Begitu juga dengan bahasa pemrograman lainnya, tampak dari depan terlihat sederhana tapi dibalik layar sebenarnya tak sesederhana yang kelihatannya.
+
+Singkatnya, didalam sebuah Interpreter (disini berjenis AST Interpreter) ada rangkaian proses yang terpisah saat menjalankan sebuah program atau script.
+
+Konsep yang biasanya kita pelajari secara umum adalah bahasa pemrograman itu mengubah dari bahasa yang dimengerti manusia menjadi bahasa yang dimengerti mesin. Ini memang tidak salah, tapi terlalu disederhanakan saja. Lebih detailnya, bahasa pemrograman dibagi menjadi dua jenis, ada yang di `Kompilasi` (bisa juga dibilang transpilasi, CMIIW) atau di `Interpretasi`.
+
+Dari pada itu juga, bahasa pemrograman itu ada yang `Low-level` (Bahasa pemrograman yang dekat dengan mesin, contohnya Rust, C, C++) dan `High-Level` (Bahasa pemrograman yang tak perlu berpikir tentang manajemen memori, contohnya Python, Ruby, Lua dan bahkan Zxui sendiri).
+
+Nah, di Interpreter sendiri terbagi menjadi dua bagian, ada `Frontend` dengan `Backend`. di frontend, ada beberapa proses, seperti:
+
+- Membaca script dan disimpan disuatu tempat
+- Mengubah teks yang ada di script menjadi serangkaian `Token` (Token adalah hasil dari perubahan sebuah karakter atau lebih menjadi sebuah hal yang mudah di modifikasi.) atau proses ini biasa disebut sebagai `Lexing` / `Lexer` atau `Tokenization`
+- Mengubah serangkaian `Token` menjadi sebuah `AST` (Abstract Syntax Tree). Proses ini biasa disebut sebagai `Parsing` / `Parser`. Ada banyak teknik untuk melakukan parsing, salah satunya adalah recursive descent parser (Recursive Descent Parser adalah cara untuk mem-parsing dengan memanjat dari akar (root / bagian tertinggi) ke bagian terendah)
+- Kalau AST Interpreter, maka kita langsung mengevaluate setiap `node` AST yang ada. TAPI kalau itu Bytecode interpreter seperti python, ruby, lua maka prosesnya akan berlanjut ke bagian Kompilasi menjadi sebuah `bytecode` (digunakan untuk dieksekusi dengan cepat oleh `vm` karena memangkas ukuran dan program menjadi linear karena tak perlu mentraverse AST lagi).
+
+Untuk cara kerja kompilator kalian cari aja sendiri aku males nulis beginian lagi, cape woy ga ada yang baca juga buset dah... BTW, selain dari hal ini, sebenarnya yang ribet itu module standard library `ffi` sih, itu harus cari tahu bagaimana caranya agar bisa struct return by value lah, bagaimana caranya manggil `C` function lah dan sebagainya, aku males jelasin jadi ya... CARI TAU SENDIRI AJA KELEN DAH.
+
+TYSM, CMIIW.
+
 ## Special Thanks To
 
 Jujur aja untuk crafting interpreters ini bukunya bagus, tapi.... tapi nih ya... aku itu malas banget bacanya soalnya itu tuh puanjang banget dan ngebosenin banget jujur... jadi aku lebih milih liat kode kode dari repo orang orang ini atau sekedar mencari di google seperti bagaimana caranya A dan bagaimana caranya B kenapa bisa A kenapa tidak B dan hal-hal lain seperti itu. karena didalam bahasa pemrograman tak menyimpan satu konsep saja. tapi banyak konsep, dan seluruh konsep tersebut itu terlalu rapi, hingga aku bingung sekali harus mulai dari mana. maka dari itu aku melihat dari paling akar hingga paling pucuk.
