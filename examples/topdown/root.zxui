@@ -1,0 +1,4 @@
+let project = {
+    name = "topdown",
+    main = "main.zxui",
+}
