@@ -72,23 +72,6 @@ impl ClassData {
             native_set: None,
         }
     }
-
-    pub fn new_native(
-        name: String,
-        methods: IndexMap<String, MethodKind>,
-        static_methods: IndexMap<String, MethodKind>,
-        native_get: Option<Rc<dyn Fn(&InstanceData, &str) -> Option<Value>>>,
-        native_set: Option<Rc<dyn Fn(&InstanceData, &str, Value) -> Result<(), String>>>,
-    ) -> Self {
-        Self {
-            name,
-            methods,
-            static_methods,
-            superclass: None,
-            native_get,
-            native_set,
-        }
-    }
 }
 
 pub struct InstanceData {

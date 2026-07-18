@@ -790,19 +790,32 @@ impl Interpreter {
                             .define(var_name, Value::Map(Rc::new(RefCell::new(map))));
                     }
 
-                    // "std" => {
-                    //     let map = match parts[1] {
-                    //         "ffi" => {
-
-                    //         }
-                    //         other => return Err(format!("unknown standard library module named '{}'", other)),
-                    //     };
-
-                    //     self.env
-                    //         .borrow_mut()
-                    //         .define(parts[1].to_string(), Value::Map(Rc::new(RefCell::new(map))));
-                    // }
-                    other => return Err(format!("unknown import scheme '{}'", other)),
+                    "std" => {
+                        let map = match parts[1] {
+                            "ffi" => {
+                                let root = match &self.root_dir {
+                                    Some(r) => r.clone(),
+                                    None => {
+                                        return Err(
+                        "cannot use 'std:ffi' without a project, please run `zxui init`."
+                            .into(),
+                    );
+                                    }
+                                };
+                                crate::ffi::make_ffi_module(root)
+                            }
+                            other => {
+                                return Err(format!(
+                                    "unknown standard library module named '{}'",
+                                    other
+                                ));
+                            }
+                        };
+                        self.env
+                            .borrow_mut()
+                            .define(parts[1].to_string(), Value::Map(Rc::new(RefCell::new(map))));
+                    }
+                    other => return Err(format!("unknown import schema '{}'", other)),
                 }
 
                 Ok(Signal::None)
