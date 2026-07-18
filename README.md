@@ -508,6 +508,73 @@ let warna = { r = 255, g = 0, b = 0, a = 255 }
 
 TAPI INGAT: kalau tanpa `__struct_name__`, maka Zxui akan menganggap struct itu sepenuhnya BENAR walau sebenarnya tidak. Yang mengakibatkan error message yang sangat tidak jelas nantinya. INGAT itu.
 
+Contoh penggunaan lengkap:
+```swift
+import "std:ffi"
+
+let raylib = ffi.load("./lib/raylib.dll")
+
+raylib.declare("InitWindow", ["i32", "i32", "str"], "void")
+raylib.declare("WindowShouldClose", [], "bool")
+raylib.declare("GetFrameTime", [], "f32")
+raylib.declare("BeginDrawing", [], "void")
+raylib.declare("EndDrawing", [], "void")
+raylib.declare("ClearBackground", ["Color"], "void")
+raylib.declare("DrawRectangle", ["i32", "i32", "i32", "i32", "Color"], "void")
+raylib.declare("IsKeyDown", ["i32"], "bool")
+raylib.declare("CloseWindow", [], "void")
+
+raylib.struct("Color", { r = "u8", g = "u8", b = "u8", a = "u8" })
+
+let white = { r = 255, g = 255, b = 255, a = 255 }
+let red = { r = 230, g = 41, b = 55, a = 255 }
+
+let KEY_W = 87
+let KEY_A = 65
+let KEY_S = 83
+let KEY_D = 68
+
+let width = 800
+let height = 600
+let speed = 400
+
+raylib.InitWindow(width, height, "Top Down Zxui")
+
+let player = {
+    x = width / 2,
+    y = height / 2,
+    w = 50,
+    h = 50,
+}
+
+while !raylib.WindowShouldClose() {
+    let dt = raylib.GetFrameTime()
+
+    raylib.BeginDrawing()
+
+    raylib.ClearBackground(white)
+
+    if raylib.IsKeyDown(KEY_W) {
+        player.y -= speed * dt
+    }
+    if raylib.IsKeyDown(KEY_A) {
+        player.x -= speed * dt
+    }
+    if raylib.IsKeyDown(KEY_S) {
+        player.y += speed * dt
+    }
+    if raylib.IsKeyDown(KEY_D) {
+        player.x += speed * dt
+    }
+
+    raylib.DrawRectangle(player.x, player.y, player.w, player.h, red)
+
+    raylib.EndDrawing()
+}
+
+raylib.CloseWindow()
+```
+
 ## CRUD Example
 
 Yaa ini example CRUD Todo-App di Zxui:
