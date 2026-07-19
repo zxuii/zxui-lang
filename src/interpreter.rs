@@ -32,6 +32,11 @@ pub enum Signal {
     Break,
 }
 
+pub enum IndexTarget {
+    Array(Rc<RefCell<Vec<Value>>>, usize),
+    StringChar(String, usize),
+}
+
 pub struct Interpreter {
     env: Rc<RefCell<Environment>>,
     call_stack: Rc<RefCell<Vec<CallFrame>>>,
@@ -274,19 +279,19 @@ impl Interpreter {
             Expr::CompOp { left, op, right } => {
                 let l = self.eval_expr(left)?;
                 let r = self.eval_expr(right)?;
+
+                if matches!(op, CompOp::EqEq | CompOp::NotEq) {
+                    let is_eq = values_equal(&l, &r);
+                    let result = if matches!(op, CompOp::EqEq) {
+                        is_eq
+                    } else {
+                        !is_eq
+                    };
+                    return Ok(Value::Boolean(result));
+                }
+
                 match (l, r) {
                     (Value::Number(a), Value::Number(b)) => {
-                        let result = match op {
-                            CompOp::Lt => a < b,
-                            CompOp::Gt => a > b,
-                            CompOp::LtEq => a <= b,
-                            CompOp::GtEq => a >= b,
-                            CompOp::EqEq => a == b,
-                            CompOp::NotEq => a != b,
-                        };
-                        Ok(Value::Boolean(result))
-                    }
-                    (Value::Boolean(a), Value::Boolean(b)) => {
                         let result = match op {
                             CompOp::Lt => a < b,
                             CompOp::Gt => a > b,
@@ -308,32 +313,10 @@ impl Interpreter {
                         };
                         Ok(Value::Boolean(result))
                     }
-                    (Value::Null, Value::Null) => match op {
-                        CompOp::EqEq => Ok(Value::Boolean(true)),
-                        CompOp::NotEq => Ok(Value::Boolean(false)),
-                        _ => Err(
-                            "cannot use ordering comparison ('<', '>', '<=', '>=') on null".into(),
-                        ),
-                    },
-                    (Value::Array(a), Value::Array(b)) => match op {
-                        CompOp::EqEq => Ok(Value::Boolean(Rc::ptr_eq(&a, &b))),
-                        CompOp::NotEq => Ok(Value::Boolean(!Rc::ptr_eq(&a, &b))),
-                        _ => Err(
-                            "cannot use ordering comparison ('<', '>', '<=', '>=') on array".into(),
-                        ),
-                    },
-                    (Value::Class(a), Value::Class(b)) => {
-                        let result = match op {
-                            CompOp::EqEq => Rc::ptr_eq(&a, &b),
-                            CompOp::NotEq => !Rc::ptr_eq(&a, &b),
-                            _ => return Err(
-                                "cannot use ordering comparison ('<', '>', '<=', '>=') on class"
-                                    .into(),
-                            ),
-                        };
-                        Ok(Value::Boolean(result))
-                    }
-                    _ => Err("comparison operation on unsupported type".into()),
+                    (a, b) => Err(format!(
+                        "cannot use ordering comparison ('<','>','<=','>=') between '{}' and '{}'",
+                        a, b,
+                    )),
                 }
             }
 
@@ -431,10 +414,13 @@ impl Interpreter {
                     _ => Err(self.format_error("attempted to call a non-function value", *line)),
                 }
             }
-            Expr::Index { target, index } => {
-                let (arr, i) = self.resolve_array_index(target, index)?;
-                Ok(arr.borrow()[i].clone())
-            }
+            Expr::Index { target, index } => match self.resolve_index(target, index)? {
+                IndexTarget::Array(arr, i) => Ok(arr.borrow()[i].clone()),
+                IndexTarget::StringChar(s, i) => {
+                    let ch = s.chars().nth(i).unwrap();
+                    Ok(Value::String(ch.to_string()))
+                }
+            },
 
             Expr::Get { target, name } => {
                 let target_val = self.eval_expr(target)?;
@@ -657,10 +643,16 @@ impl Interpreter {
                     Expr::Identifier(name) => {
                         self.env.borrow_mut().assign(name.clone(), val)?;
                     }
-                    Expr::Index { target, index } => {
-                        let (arr, i) = self.resolve_array_index(target, index)?;
-                        arr.borrow_mut()[i] = val;
-                    }
+                    Expr::Index { target, index } => match self.resolve_index(target, index)? {
+                        IndexTarget::Array(arr, i) => {
+                            arr.borrow_mut()[i] = val;
+                        }
+                        IndexTarget::StringChar(_, _) => {
+                            return Err(
+                                "cannot assign to a string index; strings are immutable".into()
+                            );
+                        }
+                    },
                     Expr::Get { target, name } => {
                         let prop = self.resolve_property(target)?;
                         prop.set(name.clone(), val)?;
@@ -681,12 +673,18 @@ impl Interpreter {
                     Expr::Index {
                         target: arr_target,
                         index,
-                    } => {
-                        let (arr, i) = self.resolve_array_index(arr_target, index)?;
-                        let current = arr.borrow()[i].clone();
-                        let new_val = Self::apply_comp_op(current, op, rhs)?;
-                        arr.borrow_mut()[i] = new_val;
-                    }
+                    } => match self.resolve_index(arr_target, index)? {
+                        IndexTarget::Array(arr, i) => {
+                            let current = arr.borrow()[i].clone();
+                            let new_val = Self::apply_comp_op(current, op, rhs)?;
+                            arr.borrow_mut()[i] = new_val;
+                        }
+                        IndexTarget::StringChar(_, _) => {
+                            return Err(
+                                "cannot assign to a string index; strings are immutable".into()
+                            );
+                        }
+                    },
                     Expr::Get {
                         target: obj_target,
                         name,
@@ -1025,21 +1023,25 @@ impl Interpreter {
         Ok(i)
     }
 
-    fn resolve_array_index(
-        &self,
-        target: &Expr,
-        index: &Expr,
-    ) -> Result<(Rc<RefCell<Vec<Value>>>, usize), String> {
+    fn resolve_index(&self, target: &Expr, index: &Expr) -> Result<IndexTarget, String> {
         let var = self.eval_expr(target)?;
         let i = self.eval_expr(index)?;
 
         match (var, i) {
             (Value::Array(arr), Value::Number(num)) => {
                 let idx = Self::validate_index(num, arr.borrow().len())?;
-                Ok((arr, idx))
+                Ok(IndexTarget::Array(arr, idx))
             }
             (Value::Array(_), _) => Err("index must be a number.".into()),
-            _ => Err("cannot indexing of non-array type.".into()),
+
+            (Value::String(s), Value::Number(num)) => {
+                let char_len = s.chars().count();
+                let idx = Self::validate_index(num, char_len)?;
+                Ok(IndexTarget::StringChar(s, idx))
+            }
+            (Value::String(_), _) => Err("index must be a number.".into()),
+
+            _ => Err("can only indexing array and string type.".into()),
         }
     }
 
@@ -1148,5 +1150,20 @@ impl PropertyTarget {
             }
             PropertyTarget::Class(_) => Err("cannot set property on a class.".into()),
         }
+    }
+}
+
+fn values_equal(a: &Value, b: &Value) -> bool {
+    match (a, b) {
+        (Value::Null, Value::Null) => true,
+        (Value::Number(x), Value::Number(y)) => x == y,
+        (Value::Boolean(x), Value::Boolean(y)) => x == y,
+        (Value::String(x), Value::String(y)) => x == y,
+        (Value::Array(x), Value::Array(y)) => Rc::ptr_eq(x, y),
+        (Value::Map(x), Value::Map(y)) => Rc::ptr_eq(x, y),
+        (Value::Class(x), Value::Class(y)) => Rc::ptr_eq(x, y),
+        (Value::Instance(x), Value::Instance(y)) => Rc::ptr_eq(x, y),
+        // beda tipe apapun (termasuk lawannya null) -> otomatis false, BUKAN error
+        _ => false,
     }
 }
