@@ -94,6 +94,10 @@ pub enum Value {
     Instance(Rc<InstanceData>),
 }
 
+thread_local! {
+    static FMT_VISITED: RefCell<Vec<usize>> = RefCell::new(Vec::new());
+}
+
 impl Value {
     pub fn native_fun(
         name: String,
@@ -101,6 +105,13 @@ impl Value {
         fun: Rc<dyn Fn(Vec<Value>) -> Result<Value, String>>,
     ) -> Self {
         Self::NativeFunction(NativeData::new(name, arity, fun))
+    }
+
+    fn is_simple_scalar(&self) -> bool {
+        matches!(
+            self,
+            Value::Null | Value::Number(_) | Value::Boolean(_) | Value::String(_)
+        )
     }
 
     fn fmt(&self, f: &mut std::fmt::Formatter, indent: usize) -> std::fmt::Result {
@@ -118,48 +129,94 @@ impl Value {
                     write!(f, "\"{}\"", str)
                 }
             }
+
             Value::Array(vec_ref) => {
-                let vec = vec_ref.borrow();
-                if vec.is_empty() {
-                    return write!(f, "[]");
+                let ptr = Rc::as_ptr(vec_ref) as usize;
+
+                let already_visiting = FMT_VISITED.with(|v| v.borrow().contains(&ptr));
+                if already_visiting {
+                    return write!(f, "[...circular...]");
                 }
-                writeln!(f, "[")?;
-                for (i, val) in vec.iter().enumerate() {
-                    write!(f, "{}", next_spaces)?;
-                    val.fmt(f, indent + 1)?;
-                    if i < vec.len() - 1 {
-                        writeln!(f, ",")?;
-                    } else {
-                        writeln!(f)?;
+
+                FMT_VISITED.with(|v| v.borrow_mut().push(ptr));
+                let result = (|| {
+                    let vec = vec_ref.borrow();
+                    if vec.is_empty() {
+                        return write!(f, "[]");
                     }
-                }
-                write!(f, "{}]", spaces)
+
+                    // heuristik: kalau semua elemen scalar sederhana dan totalnya pendek, satu baris
+                    let all_simple = vec.iter().all(|v| v.is_simple_scalar());
+                    if all_simple && vec.len() <= 8 {
+                        write!(f, "[")?;
+                        for (i, val) in vec.iter().enumerate() {
+                            val.fmt(f, indent + 1)?;
+                            if i < vec.len() - 1 {
+                                write!(f, ", ")?;
+                            }
+                        }
+                        return write!(f, "]");
+                    }
+
+                    writeln!(f, "[")?;
+                    for (i, val) in vec.iter().enumerate() {
+                        write!(f, "{}", next_spaces)?;
+                        val.fmt(f, indent + 1)?;
+                        if i < vec.len() - 1 {
+                            writeln!(f, ",")?;
+                        } else {
+                            writeln!(f)?;
+                        }
+                    }
+                    write!(f, "{}]", spaces)
+                })();
+
+                FMT_VISITED.with(|v| {
+                    v.borrow_mut().pop();
+                });
+                result
             }
+
             Value::Map(map_ref) => {
-                let map = map_ref.borrow();
-                if map.is_empty() {
-                    return write!(f, "{{}}");
+                let ptr = Rc::as_ptr(map_ref) as usize;
+
+                let already_visiting = FMT_VISITED.with(|v| v.borrow().contains(&ptr));
+                if already_visiting {
+                    return write!(f, "{{...circular...}}");
                 }
-                writeln!(f, "{{")?;
-                for (i, (key, val)) in map.iter().enumerate() {
-                    write!(f, "{}{} = ", next_spaces, key)?;
-                    val.fmt(f, indent + 1)?;
-                    if i < map.len() - 1 {
-                        writeln!(f, ",")?;
-                    } else {
-                        writeln!(f)?;
+
+                FMT_VISITED.with(|v| v.borrow_mut().push(ptr));
+                let result = (|| {
+                    let map = map_ref.borrow();
+                    if map.is_empty() {
+                        return write!(f, "{{}}");
                     }
-                }
-                write!(f, "{}}}", spaces)
+                    writeln!(f, "{{")?;
+                    for (i, (key, val)) in map.iter().enumerate() {
+                        write!(f, "{}{} = ", next_spaces, key)?;
+                        val.fmt(f, indent + 1)?;
+                        if i < map.len() - 1 {
+                            writeln!(f, ",")?;
+                        } else {
+                            writeln!(f)?;
+                        }
+                    }
+                    write!(f, "{}}}", spaces)
+                })();
+
+                FMT_VISITED.with(|v| {
+                    v.borrow_mut().pop();
+                });
+                result
             }
+
             Value::Function(fun) => write!(f, "[fun {}]", fun.name),
             Value::NativeFunction(fun) => write!(f, "[native fun {}]", fun.name),
             Value::Class(c) => write!(f, "[class {}]", c.name),
-            Value::Instance(i) => write!(f, "[instance of {}", i.class.name),
+            Value::Instance(i) => write!(f, "[instance of {}]", i.class.name),
         }
     }
 }
-
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         self.fmt(f, 0)
