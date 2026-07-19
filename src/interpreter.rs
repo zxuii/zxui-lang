@@ -322,6 +322,17 @@ impl Interpreter {
                             "cannot use ordering comparison ('<', '>', '<=', '>=') on array".into(),
                         ),
                     },
+                    (Value::Class(a), Value::Class(b)) => {
+                        let result = match op {
+                            CompOp::EqEq => Rc::ptr_eq(&a, &b),
+                            CompOp::NotEq => !Rc::ptr_eq(&a, &b),
+                            _ => return Err(
+                                "cannot use ordering comparison ('<', '>', '<=', '>=') on class"
+                                    .into(),
+                            ),
+                        };
+                        Ok(Value::Boolean(result))
+                    }
                     _ => Err("comparison operation on unsupported type".into()),
                 }
             }
