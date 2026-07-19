@@ -1,0 +1,29 @@
+fun a() {
+    // ga ngapa-ngapain
+}
+
+class b {
+    // ga ngapa-ngapain
+}
+
+let c = 500
+let d = "hello"
+let e = true
+let f = []
+let g = {}
+let h = null
+let real_b = b()
+
+println("typeof(a) = ", typeof(a), " : ", typeof(a) == Function)
+println("typeof(b) = ", typeof(b), " : ", typeof(b) == Class)
+println("typeof(c) = ", typeof(c), " : ", typeof(c) == Number)
+println("typeof(d) = ", typeof(d), " : ", typeof(d) == String)
+println("typeof(e) = ", typeof(e), " : ", typeof(e) == Boolean)
+println("typeof(f) = ", typeof(f), " : ", typeof(f) == Array)
+println("typeof(g) = ", typeof(g), " : ", typeof(g) == Map)
+println("typeof(h) = ", typeof(h), " : ", typeof(h) == Null)
+println("typeof(real_b) = ", typeof(real_b), " : ", typeof(real_b) == b)
+
+let a = []
+a.push(a)
+println(a)
