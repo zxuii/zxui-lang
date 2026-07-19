@@ -40,7 +40,7 @@ class TodoApp {
     }
 
     fun tampilTodos() {
-        if len(self.todos) == 0 {
+        if self.todos.len() == 0 {
             println("Belum ada todo!");
         } else {
             let i = 0;
@@ -52,38 +52,38 @@ class TodoApp {
     }
 
     fun cekNomor(idx) {
-        return idx < 0 or idx >= len(self.todos);
+        return idx < 0 or idx >= self.todos.len();
     }
 
     fun tambahTodo() {
         let input = readline("Masukan todo: ");
-        push(self.todos, Todo(input));
+        self.todos.push(Todo(input));
         println("Todo berhasil ditambahkan!");
     }
 
     fun hapusTodo() {
-        if len(self.todos) == 0 {
+        if self.todos.len() == 0 {
             println("Belum ada todo yang bisa dihapus!");
         } else {
             self.tampilTodos();
             let input = readline("Hapus nomor berapa? ");
-            let idx = number(input) - 1;
+            let idx = Number(input) - 1;
             if self.cekNomor(idx) {
                 println("Nomor tidak valid!");
             } else {
-                remove(self.todos, idx);
+                self.todos.remove(idx);
                 println("Todo berhasil dihapus!");
             }
         }
     }
 
     fun toggleTodo() {
-        if len(self.todos) == 0 {
+        if self.todos.len() == 0 {
             println("Belum ada todo!");
         } else {
             self.tampilTodos();
             let input = readline("Tandai nomor berapa? ");
-            let idx = number(input) - 1;
+            let idx = Number(input) - 1;
             if self.cekNomor(idx) {
                 println("Nomor tidak valid!");
             } else {
