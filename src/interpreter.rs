@@ -38,6 +38,7 @@ pub struct Interpreter {
     filename: Rc<str>,
     code: Rc<str>,
     root_dir: Option<Rc<str>>,
+    types: Rc<crate::object::TypeRegistry>,
 }
 
 impl Interpreter {
@@ -48,8 +49,10 @@ impl Interpreter {
             filename: Rc::from(filename),
             code: Rc::from(code),
             root_dir: None,
+            types: Rc::new(crate::types::build_type_registry()),
         };
         interp.define_natives();
+        interp.define_types();
         interp
             .call_stack
             .borrow_mut()
@@ -64,6 +67,7 @@ impl Interpreter {
         filename: Rc<str>,
         code: Rc<str>,
         root_dir: Option<Rc<str>>,
+        types: Rc<crate::object::TypeRegistry>,
     ) -> Self {
         Self {
             env,
@@ -71,6 +75,7 @@ impl Interpreter {
             filename,
             code,
             root_dir,
+            types,
         }
     }
 
@@ -81,8 +86,10 @@ impl Interpreter {
             filename: filename,
             code: code,
             root_dir: Some(root_dir),
+            types: Rc::new(crate::types::build_type_registry()),
         };
         interp.define_natives();
+        interp.define_types();
         interp
             .call_stack
             .borrow_mut()
@@ -104,57 +111,102 @@ impl Interpreter {
             Value::native_fun("readline".to_string(), -1, Rc::new(native_readline)),
         );
         self.env.borrow_mut().define(
-            "typeof".to_string(),
-            Value::native_fun("typeof".to_string(), 1, Rc::new(native_typeof)),
-        );
-        self.env.borrow_mut().define(
-            "number".to_string(),
-            Value::native_fun("number".to_string(), 1, Rc::new(native_number)),
-        );
-        self.env.borrow_mut().define(
-            "string".to_string(),
-            Value::native_fun("string".to_string(), 1, Rc::new(native_string)),
-        );
-        self.env.borrow_mut().define(
-            "boolean".to_string(),
-            Value::native_fun("boolean".to_string(), 1, Rc::new(native_boolean)),
-        );
-        self.env.borrow_mut().define(
-            "push".to_string(),
-            Value::native_fun("push".to_string(), 2, Rc::new(native_push)),
-        );
-        self.env.borrow_mut().define(
-            "pop".to_string(),
-            Value::native_fun("pop".to_string(), 1, Rc::new(native_pop)),
-        );
-        self.env.borrow_mut().define(
-            "len".to_string(),
-            Value::native_fun("len".to_string(), 1, Rc::new(native_len)),
-        );
-        self.env.borrow_mut().define(
-            "remove".to_string(),
-            Value::native_fun("remove".to_string(), 2, Rc::new(native_remove)),
-        );
-        self.env.borrow_mut().define(
             "range".to_string(),
             Value::native_fun("range".to_string(), -1, Rc::new(native_range)),
         );
+
+        let types = self.types.clone();
         self.env.borrow_mut().define(
-            "keys".to_string(),
-            Value::native_fun("keys".to_string(), 1, Rc::new(native_keys)),
+            "typeof".to_string(),
+            Value::native_fun(
+                "typeof".to_string(),
+                1,
+                Rc::new(move |args| Ok(Value::Class(types.class_for(&args[0])))),
+            ),
+        );
+    }
+
+    fn define_types(&mut self) {
+        self.env.borrow_mut().define(
+            "Number".to_string(),
+            Value::Class(Rc::clone(&self.types.number)),
         );
         self.env.borrow_mut().define(
-            "values".to_string(),
-            Value::native_fun("values".to_string(), 1, Rc::new(native_values)),
+            "String".to_string(),
+            Value::Class(Rc::clone(&self.types.string)),
         );
         self.env.borrow_mut().define(
-            "hasKey".to_string(),
-            Value::native_fun("hasKey".to_string(), 2, Rc::new(native_has_key)),
+            "Boolean".to_string(),
+            Value::Class(Rc::clone(&self.types.boolean)),
         );
         self.env.borrow_mut().define(
-            "clear".to_string(),
-            Value::native_fun("clear".to_string(), 2, Rc::new(native_clear)),
+            "Array".to_string(),
+            Value::Class(Rc::clone(&self.types.array)),
         );
+        self.env
+            .borrow_mut()
+            .define("Map".to_string(), Value::Class(Rc::clone(&self.types.map)));
+        self.env.borrow_mut().define(
+            "Null".to_string(),
+            Value::Class(Rc::clone(&self.types.null)),
+        );
+        self.env.borrow_mut().define(
+            "Function".to_string(),
+            Value::Class(Rc::clone(&self.types.function)),
+        );
+        self.env.borrow_mut().define(
+            "NativeFunction".to_string(),
+            Value::Class(Rc::clone(&self.types.native_function)),
+        );
+        self.env.borrow_mut().define(
+            "Class".to_string(),
+            Value::Class(Rc::clone(&self.types.class)),
+        );
+    }
+
+    fn try_native_type_conversion(
+        &self,
+        class: &Rc<ClassData>,
+        args: &[Value],
+    ) -> Result<Option<Value>, String> {
+        if Rc::ptr_eq(class, &self.types.number) {
+            if args.len() != 1 {
+                return Err(format!(
+                    "Number(): expects 1 argument but got {}",
+                    args.len()
+                ));
+            }
+            return Ok(Some(crate::types::convert_to_number(&args[0])?));
+        }
+        if Rc::ptr_eq(class, &self.types.string) {
+            if args.len() != 1 {
+                return Err(format!(
+                    "String(): expects 1 argument but got {}",
+                    args.len()
+                ));
+            }
+            return Ok(Some(Value::String(format!("{}", args[0]))));
+        }
+        if Rc::ptr_eq(class, &self.types.boolean) {
+            if args.len() != 1 {
+                return Err(format!(
+                    "Boolean(): expects 1 argument but got {}",
+                    args.len()
+                ));
+            }
+            return Ok(Some(crate::types::convert_to_boolean(&args[0])));
+        }
+        if Rc::ptr_eq(class, &self.types.array) {
+            if args.len() != 1 {
+                return Err(format!(
+                    "Array(): expects 1 argument but got {}",
+                    args.len()
+                ));
+            }
+            return Ok(Some(crate::types::convert_to_array(&args[0])?));
+        }
+
+        Ok(None)
     }
 
     pub fn eval_expr(&self, expr: &Expr) -> Result<Value, String> {
@@ -321,6 +373,12 @@ impl Interpreter {
                     }
 
                     Value::Class(class) => {
+                        if let Some(converted) =
+                            self.try_native_type_conversion(&class, &evaluated_args)?
+                        {
+                            return Ok(converted);
+                        }
+
                         let instance = Rc::new(InstanceData {
                             class: Rc::clone(&class),
                             fields: RefCell::new(IndexMap::new()),
@@ -368,21 +426,43 @@ impl Interpreter {
             }
 
             Expr::Get { target, name } => {
-                let prop = self.resolve_property(target)?;
-                if let Some(val) = prop.get(name) {
-                    return Ok(val);
-                }
-                if let PropertyTarget::Instance(inst) = &prop {
-                    if let Some(fun) = find_method(&inst.class, name) {
-                        return Ok(bind_method(&fun, Value::Instance(Rc::clone(inst))));
-                    }
-                }
-                Err(format!(
-                    "property '{}' does not exist on this object.",
-                    name
-                ))
-            }
+                let target_val = self.eval_expr(target)?;
 
+                match &target_val {
+                    Value::Map(map) => {
+                        if let Some(val) = map.borrow().get(name).cloned() {
+                            return Ok(val);
+                        }
+                    }
+                    Value::Instance(inst) => {
+                        if let Some(getter) = &inst.class.native_get {
+                            if let Some(val) = getter(inst, name) {
+                                return Ok(val);
+                            }
+                        }
+                        if let Some(val) = inst.fields.borrow().get(name).cloned() {
+                            return Ok(val);
+                        }
+                        if let Some(fun) = find_method(&inst.class, name) {
+                            return Ok(bind_method(&fun, Value::Instance(Rc::clone(inst))));
+                        }
+                    }
+                    Value::Class(class) => {
+                        if let Some(m) = find_static_method(class, name) {
+                            return Ok(bind_static(&m));
+                        }
+                    }
+                    _ => {}
+                }
+
+                let type_class = self.types.class_for(&target_val);
+                if let Some(fun) = find_method(&type_class, name) {
+                    return Ok(bind_method(&fun, target_val));
+                }
+
+                Err(format!("property '{}' does not exist on this value.", name))
+            }
+            
             Expr::SelfExpr => self.env.borrow().get("self".to_string()),
 
             Expr::Super { method } => {
@@ -445,6 +525,7 @@ impl Interpreter {
             self.filename.clone(),
             self.code.clone(),
             self.root_dir.clone(),
+            self.types.clone(),
         );
         let mut return_val = Value::Null;
         let mut error = None;
@@ -755,7 +836,10 @@ impl Interpreter {
                             Rc::from(module_path_str),
                             Rc::from(code),
                             Some(root),
+                            self.types.clone(),
                         );
+                        module_interp.define_natives();
+                        module_interp.define_types();
 
                         module_interp.define_natives();
                         module_interp.exec_stmt(&stmts)?;

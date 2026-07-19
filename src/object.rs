@@ -172,13 +172,31 @@ impl std::fmt::Debug for Value {
     }
 }
 
-// impl Value {
-//     fn equals(&self, other: &Value) -> bool {
-//         match (self, other) {
-//             (Value::Null, Value::Null) => true,
-//             (_, Value::Null) => false,
-//             (Value::Null, _) => false,
-//             (Value::Number(left), Value::Number(right)) => left == right,
-//         }
-//     }
-// }
+pub struct TypeRegistry {
+    pub number: Rc<ClassData>,
+    pub string: Rc<ClassData>,
+    pub boolean: Rc<ClassData>,
+    pub array: Rc<ClassData>,
+    pub map: Rc<ClassData>,
+    pub null: Rc<ClassData>,
+    pub function: Rc<ClassData>,
+    pub native_function: Rc<ClassData>,
+    pub class: Rc<ClassData>,
+}
+
+impl TypeRegistry {
+    pub fn class_for(&self, v: &Value) -> Rc<ClassData> {
+        match v {
+            Value::Number(_) => Rc::clone(&self.number),
+            Value::String(_) => Rc::clone(&self.string),
+            Value::Boolean(_) => Rc::clone(&self.boolean),
+            Value::Array(_) => Rc::clone(&self.array),
+            Value::Map(_) => Rc::clone(&self.map),
+            Value::Null => Rc::clone(&self.null),
+            Value::Function(_) => Rc::clone(&self.function),
+            Value::NativeFunction(_) => Rc::clone(&self.native_function),
+            Value::Class(_) => Rc::clone(&self.class),
+            Value::Instance(inst) => Rc::clone(&inst.class),
+        }
+    }
+}

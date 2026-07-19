@@ -1,12 +1,13 @@
 mod ast;
 mod builtins;
 mod environment;
-mod interpreter;
 mod ffi;
+mod interpreter;
 mod lexer;
 mod object;
 mod parser;
 mod tokens;
+mod types;
 
 use interpreter::Interpreter;
 use lexer::Lexer;
@@ -39,13 +40,14 @@ fn run_file(path: &str) {
                 Ok(stmt) => {
                     // println!("{:#?}", stmt);
                     match Interpreter::new(path.to_string(), f).exec_stmt(&stmt) {
-                    Ok(_) => {}
+                        Ok(_) => {}
 
-                    Err(e) => {
-                        eprintln!("Runtime Error: {e}");
-                        exit(1)
+                        Err(e) => {
+                            eprintln!("Runtime Error: {e}");
+                            exit(1)
+                        }
                     }
-                }},
+                }
                 Err(e) => {
                     eprintln!("Parse Error: {e}");
                     exit(1)
@@ -99,6 +101,7 @@ fn run_project(dir: &str) {
         Rc::from(root_str),
         Rc::from(code),
         None,
+        Rc::new(types::build_type_registry()),
     );
 
     if let Err(e) = root_interp.exec_stmt(&stmt) {
