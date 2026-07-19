@@ -462,7 +462,7 @@ impl Interpreter {
 
                 Err(format!("property '{}' does not exist on this value.", name))
             }
-            
+
             Expr::SelfExpr => self.env.borrow().get("self".to_string()),
 
             Expr::Super { method } => {
@@ -966,8 +966,8 @@ impl Interpreter {
                 trace.push_str(&format!("  {}: at {}\n", i, frame.fun_name));
             } else {
                 trace.push_str(&format!(
-                    "  {}: at fun {}() (line {})\n",
-                    i, frame.fun_name, frame.line
+                    "  {}: at fun {}() at {}:{}\n",
+                    i, frame.fun_name, self.filename, frame.line
                 ));
             }
         }
