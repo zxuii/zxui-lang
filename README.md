@@ -165,6 +165,8 @@ di Zxui, ada beberapa tipe data. Antara lain:
 - `Function` - equivalent dengan enum struct berisi nama, parameter, body dan closure.
 - `Native Function` - agar bisa membinding antara fungsi di rust ke fungsi di bahasa Zxui
 - `Null` - null value
+- `Class` - equivalent dengan struct berisi nama, daftar method (instance & static), dan optional superclass. Ini yang kamu buat lewat keyword `class`.
+- `Instance` - hasil pemanggilan sebuah `Class`, menyimpan field-nya sendiri (`self.x = ...`) dan referensi balik ke class asalnya.
 
 Contoh tiap tipe data:
 ```swift
@@ -176,6 +178,24 @@ true /*or*/ false // Boolean
 fun a() {} // Function (stmt, tapi bisa dipass sebagai `a` alias fungsi.)
 println() // salah satu dari beberapa native function
 null // null value
+class Person { fun init() {} } // Class
+Person() // Instance, hasil pemanggilan class diatas
+```
+
+Semua tipe diatas juga punya identitas class-nya masing-masing, bisa didapat lewat `typeof(x)` dan dibandingkan langsung:
+
+```swift
+println(typeof(5) == Number)        // true
+println(typeof("hai") == String)    // true
+println(typeof([1,2]) == Array)     // true
+println(typeof(Person()) == Person) // true
+```
+
+Kamu juga bisa langsung mengonversi tipe data menggunakan constructor alias memanggil menggunakan identitas class tiap tipe. contoh:
+
+```swift
+let num = 500;
+let numStr = String(num); // otomatis jadi "500"
 ```
 
 ## Variables and Assignments
