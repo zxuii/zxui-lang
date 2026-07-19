@@ -50,9 +50,6 @@ fn expect_self_number(v: &Value, fname: &str) -> Result<f64, String> {
 fn build_number_class() -> Rc<ClassData> {
     let mut methods = IndexMap::new();
     methods.extend([
-        method("toString", 0, |self_val, _| {
-            Ok(Value::String(format!("{}", expect_self_number(&self_val, "toString")?)))
-        }),
         method("floor", 0, |self_val, _| {
             Ok(Value::Number(expect_self_number(&self_val, "floor")?.floor()))
         }),
