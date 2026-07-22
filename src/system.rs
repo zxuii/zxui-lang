@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 use indexmap::IndexMap;
 
@@ -8,6 +8,7 @@ pub fn make_system_module() -> IndexMap<String, Value> {
     let mut map = IndexMap::new();
     map.insert("os".to_string(), system_os());
     map.insert("exit".to_string(), system_exit());
+    map.insert("args".to_string(), system_args());
 
     map
 }
@@ -36,6 +37,17 @@ fn system_exit() -> Value {
                 Value::Number(n) => *n as i32,
                 other => return Err(format!("system.exit(): unsupported type '{}' expected type 'Number'", other).into())
             })
+        })
+    ))
+}
+
+fn system_args() -> Value {
+    Value::NativeFunction(NativeData::new(
+        "args".to_string(),
+        0,
+        Rc::new(move |_| {
+            let args: Vec<Value> = std::env::args().skip(2).map(Value::String).collect();
+            return Ok(Value::Array(Rc::new(RefCell::new(args))))
         })
     ))
 }
