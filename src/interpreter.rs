@@ -885,12 +885,16 @@ impl Interpreter {
                                 };
                                 crate::ffi::make_ffi_module(root)
                             }
+                            "system" => {
+                                crate::system::make_system_module()
+                            }
                             other => {
                                 return Err(format!(
                                     "unknown standard library module named '{}'",
                                     other
                                 ));
                             }
+
                         };
                         self.env
                             .borrow_mut()
