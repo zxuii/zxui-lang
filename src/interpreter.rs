@@ -886,7 +886,7 @@ impl Interpreter {
                                 crate::ffi::make_ffi_module(root)
                             }
                             "system" => {
-                                crate::system::make_system_module()
+                                crate::system::make_system_module(root)
                             }
                             other => {
                                 return Err(format!(

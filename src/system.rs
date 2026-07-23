@@ -4,11 +4,12 @@ use indexmap::IndexMap;
 
 use crate::object::{NativeData, Value};
 
-pub fn make_system_module() -> IndexMap<String, Value> {
+pub fn make_system_module(root_dir: Rc<str>) -> IndexMap<String, Value> {
     let mut map = IndexMap::new();
     map.insert("os".to_string(), system_os());
     map.insert("exit".to_string(), system_exit());
     map.insert("args".to_string(), system_args());
+    map.insert("getRoot".to_string(), system_get_root(root_dir));
 
     map
 }
@@ -48,6 +49,16 @@ fn system_args() -> Value {
         Rc::new(move |_| {
             let args: Vec<Value> = std::env::args().skip(2).map(Value::String).collect();
             return Ok(Value::Array(Rc::new(RefCell::new(args))))
+        })
+    ))
+}
+
+fn system_get_root(root_dir: Rc<str>) -> Value {
+    Value::NativeFunction(NativeData::new(
+        "cwd".to_string(),
+        0,
+        Rc::new(move |_| {
+            return Ok(Value::String(root_dir.to_string()))
         })
     ))
 }
