@@ -888,6 +888,9 @@ impl Interpreter {
                             "system" => {
                                 crate::system::make_system_module(root)
                             }
+                            "fs" => {
+                                crate::filesystem::make_fs_module(root)
+                            }
                             other => {
                                 return Err(format!(
                                     "unknown standard library module named '{}'",

@@ -2,6 +2,7 @@ mod ast;
 mod builtins;
 mod environment;
 mod ffi;
+mod filesystem;
 mod interpreter;
 mod lexer;
 mod object;
