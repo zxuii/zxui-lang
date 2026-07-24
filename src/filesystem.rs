@@ -47,15 +47,13 @@ fn build_fs_class() -> Rc<ClassData> {
                     _ => return Err("read(): called on non-instance".to_string()),
                 };
                 let state = get_state(&inst)?;
-                
+
                 let mut contents = String::new();
                 match File::open(state.path.as_ref()) {
-                    Ok(mut f) => {
-                        match f.read_to_string(&mut contents) {
-                            Ok(_) => {}
-                            Err(e) => return Err(format!("read(): failed to read: '{}'", e)),
-                        }
-                    } 
+                    Ok(mut f) => match f.read_to_string(&mut contents) {
+                        Ok(_) => {}
+                        Err(e) => return Err(format!("read(): failed to read: '{}'", e)),
+                    },
                     Err(e) => return Err(format!("read(): failed to open file: {}", e)),
                 }
                 Ok(Value::String(contents))
@@ -93,10 +91,14 @@ fn build_fs_class() -> Rc<ClassData> {
                 let state = get_state(&inst)?;
                 let str_to_write = match &args[0] {
                     Value::String(s) => s.clone(),
-                    other => return Err(format!("append(): using of unsupported type '{}'", other)),
+                    other => {
+                        return Err(format!("append(): using of unsupported type '{}'", other));
+                    }
                 };
-                
-                let file = fs::OpenOptions::new().append(true).open(state.path.as_ref());
+
+                let file = fs::OpenOptions::new()
+                    .append(true)
+                    .open(state.path.as_ref());
                 let _ = match file {
                     Ok(mut f) => writeln!(f, "{}", str_to_write),
                     Err(e) => return Err(format!("append(): failed to append file: {}", e)),
@@ -121,7 +123,7 @@ fn build_fs_class() -> Rc<ClassData> {
                     Value::String(s) => s.clone(),
                     other => return Err(format!("write(): using of unsupported type '{}'", other)),
                 };
-                
+
                 let _ = fs::write(state.path.as_ref(), str_to_write);
                 // let file = File::open(state.path.as_ref());
                 // let _ = match file {
@@ -132,7 +134,6 @@ fn build_fs_class() -> Rc<ClassData> {
             }),
         })),
     );
-
 
     Rc::new(ClassData::new(
         "FS".to_string(),
@@ -156,15 +157,12 @@ fn fs_open(root_dir: Rc<str>) -> Value {
                     ));
                 }
             };
-            let path = std::path::Path::new(root_dir.as_ref())
-                .join(&arg_path)
-                .to_string_lossy()
-                .to_string();
+            let path = std::path::Path::new(root_dir.as_ref()).join(&arg_path);
 
-
-            let state = Rc::new(FsState {
-                path: path.into(),
-            });
+            if !path.exists() {
+                let _ = File::create(&path); // anggap berhasil.
+            }
+            let state = Rc::new(FsState { path: path.to_string_lossy().to_string().into() });
 
             let class = build_fs_class();
             let instance = InstanceData {
