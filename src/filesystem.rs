@@ -122,11 +122,12 @@ fn build_fs_class() -> Rc<ClassData> {
                     other => return Err(format!("write(): using of unsupported type '{}'", other)),
                 };
                 
-                let file = File::open(state.path.as_ref());
-                let _ = match file {
-                    Ok(mut f) => writeln!(f, "{}", str_to_write),
-                    Err(e) => return Err(format!("write(): failed to write file: {}", e)),
-                };
+                let _ = fs::write(state.path.as_ref(), str_to_write);
+                // let file = File::open(state.path.as_ref());
+                // let _ = match file {
+                //     Ok(mut f) => writeln!(f, "{}", str_to_write),
+                //     Err(e) => return Err(format!("write(): failed to write file: {}", e)),
+                // };
                 Ok(Value::Null)
             }),
         })),
