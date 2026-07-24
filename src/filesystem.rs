@@ -1,6 +1,7 @@
 use std::any::Any;
 use std::fs::File;
 use std::io::Read;
+use std::io::Write;
 use std::rc::Rc;
 use std::{cell::RefCell, fs};
 
@@ -12,7 +13,6 @@ use crate::object::{
 };
 
 struct FsState {
-    handle: RefCell<File>,
     path: Rc<str>,
 }
 
@@ -47,11 +47,16 @@ fn build_fs_class() -> Rc<ClassData> {
                     _ => return Err("read(): called on non-instance".to_string()),
                 };
                 let state = get_state(&inst)?;
-
+                
                 let mut contents = String::new();
-                match state.handle.borrow_mut().read_to_string(&mut contents) {
-                    Ok(_) => {}
-                    Err(e) => return Err(format!("FS.read(): failed to read: '{}'", e))
+                match File::open(state.path.as_ref()) {
+                    Ok(mut f) => {
+                        match f.read_to_string(&mut contents) {
+                            Ok(_) => {}
+                            Err(e) => return Err(format!("read(): failed to read: '{}'", e)),
+                        }
+                    } 
+                    Err(e) => return Err(format!("read(): failed to open file: {}", e)),
                 }
                 Ok(Value::String(contents))
             }),
@@ -74,7 +79,60 @@ fn build_fs_class() -> Rc<ClassData> {
             }),
         })),
     );
-    
+
+    methods.insert(
+        "append".to_string(),
+        MethodKind::Native(Rc::new(NativeMethodData {
+            name: "append".to_string(),
+            arity: 1,
+            fun: Box::new(move |self_val, args| -> Result<Value, String> {
+                let inst = match &self_val {
+                    Value::Instance(i) => i.clone(),
+                    _ => return Err("append(): called on non-instance".to_string()),
+                };
+                let state = get_state(&inst)?;
+                let str_to_write = match &args[0] {
+                    Value::String(s) => s.clone(),
+                    other => return Err(format!("append(): using of unsupported type '{}'", other)),
+                };
+                
+                let file = fs::OpenOptions::new().append(true).open(state.path.as_ref());
+                let _ = match file {
+                    Ok(mut f) => writeln!(f, "{}", str_to_write),
+                    Err(e) => return Err(format!("append(): failed to append file: {}", e)),
+                };
+                Ok(Value::Null)
+            }),
+        })),
+    );
+
+    methods.insert(
+        "write".to_string(),
+        MethodKind::Native(Rc::new(NativeMethodData {
+            name: "write".to_string(),
+            arity: 1,
+            fun: Box::new(move |self_val, args| -> Result<Value, String> {
+                let inst = match &self_val {
+                    Value::Instance(i) => i.clone(),
+                    _ => return Err("write(): called on non-instance".to_string()),
+                };
+                let state = get_state(&inst)?;
+                let str_to_write = match &args[0] {
+                    Value::String(s) => s.clone(),
+                    other => return Err(format!("write(): using of unsupported type '{}'", other)),
+                };
+                
+                let file = File::open(state.path.as_ref());
+                let _ = match file {
+                    Ok(mut f) => writeln!(f, "{}", str_to_write),
+                    Err(e) => return Err(format!("write(): failed to write file: {}", e)),
+                };
+                Ok(Value::Null)
+            }),
+        })),
+    );
+
+
     Rc::new(ClassData::new(
         "FS".to_string(),
         methods,
@@ -102,12 +160,10 @@ fn fs_open(root_dir: Rc<str>) -> Value {
                 .to_string_lossy()
                 .to_string();
 
-            let handle = match fs::File::open(&path) {
-                Ok(f) => f,
-                Err(e) => return Err(format!("fs.load(): failed to open file '{}': {}", path, e)),
-            };
 
-            let state = Rc::new(FsState { handle: handle.into(), path: path.into() });
+            let state = Rc::new(FsState {
+                path: path.into(),
+            });
 
             let class = build_fs_class();
             let instance = InstanceData {
